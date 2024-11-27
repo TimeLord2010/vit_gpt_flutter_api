@@ -326,4 +326,8 @@ class ConversationProvider with ChangeNotifier {
       ));
     }
   }
+
+  void updateUI() {
+    notifyListeners();
+  }
 }
