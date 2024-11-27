@@ -1,5 +1,5 @@
 name: vit_gpt_flutter_api
-description: "A new Flutter package project."
+description: "Collection of classes to save and connect to open ai resources"
 version: 0.0.1
 homepage:
 
