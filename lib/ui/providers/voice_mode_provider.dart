@@ -90,14 +90,9 @@ class VoiceModeProvider {
           speaker.dispose();
           return;
         }
-        if ([ChatStatus.listeningToUser, ChatStatus.transcribing]
-            .contains(chatStatus)) {
-          return;
-        }
         await speaker.process(chunk);
         if (speaker.hasPendingSpeaches) {
           setStatus(ChatStatus.answeringAndSpeaking);
-          // notifyListeners();
         }
       },
     );
@@ -106,16 +101,11 @@ class VoiceModeProvider {
 
     // Checking if speaking was cancelled.
     var status = getStatus();
-    if ([ChatStatus.listeningToUser, ChatStatus.transcribing]
-        .contains(status)) {
-      if (status == ChatStatus.listeningToUser && !voiceRecorder.isRecording) {
-        _listenToUser();
-      }
-      return;
-    }
 
-    setStatus(ChatStatus.speaking);
-    notifyListeners();
+    if (status == ChatStatus.answeringAndSpeaking ||
+        status == ChatStatus.answering) {
+      setStatus(ChatStatus.speaking);
+    }
 
     Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       if (speaker.hasPendingSpeaches) {
@@ -126,15 +116,12 @@ class VoiceModeProvider {
       timer.cancel();
       logger.info('Finished speaking a response!');
 
+      // Preventing recorder from working while the speaker is active.
       while (speaker.isSpeaking) {
         await Future.delayed(const Duration(milliseconds: 200));
       }
 
       if (isVoiceMode()) {
-        if ([ChatStatus.listeningToUser, ChatStatus.transcribing]
-            .contains(getStatus())) {
-          return;
-        }
         await _listenToUser();
       }
     });
@@ -239,7 +226,6 @@ class VoiceModeProvider {
         logger.info('Stopped AI speaking');
         _speaker?.dispose();
         _speaker = null;
-        setStatus(ChatStatus.listeningToUser);
       default:
         break;
     }

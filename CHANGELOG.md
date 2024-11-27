@@ -1,3 +1,7 @@
+## 0.0.5
+
+* Refac: Stop voice interaction
+
 ## 0.0.4
 
 * FIX: Stop voice interaction
