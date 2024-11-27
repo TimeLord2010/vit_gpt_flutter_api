@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/players/vit_audio_player.dart';
@@ -150,9 +149,6 @@ class VoiceModeProvider {
       setStatus(ChatStatus.transcribing);
       notifyListeners();
       var file = await voiceRecorder.stop();
-      if (Random().nextBool()) {
-        throw Exception('Test error');
-      }
       var input = await transcribe(file);
       logger.info('Transcription: $input');
 
