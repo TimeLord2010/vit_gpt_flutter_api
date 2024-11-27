@@ -1,4 +1,4 @@
-import 'package:chatgpt_chat/data/enums/chat_status.dart';
+import 'chat_status.dart';
 
 enum VoiceModeStatus {
   listening,
