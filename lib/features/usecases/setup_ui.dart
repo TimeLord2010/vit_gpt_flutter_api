@@ -14,6 +14,7 @@ import '../repositories/local_storage_repository.dart';
 
 Future<void> setupUI({
   String? openAiKey,
+  TTSModel Function()? tts,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -36,7 +37,7 @@ Future<void> setupUI({
   setupFactories(
     localStorage: () => LocalStorageRepository(sp, db),
     recorder: () => VitAudioRecorder(),
-    tts: () => LeiaTts(),
+    tts: tts,
     simplePlayerFactory: (file) {
       return VitAudioPlayer(
         audioPath: file.path,
