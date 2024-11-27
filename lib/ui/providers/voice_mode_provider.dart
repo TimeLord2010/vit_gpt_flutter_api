@@ -105,8 +105,12 @@ class VoiceModeProvider {
     isInVoiceMode = false;
 
     // Checking if speaking was cancelled.
+    var status = getStatus();
     if ([ChatStatus.listeningToUser, ChatStatus.transcribing]
-        .contains(getStatus())) {
+        .contains(status)) {
+      if (status == ChatStatus.listeningToUser && !voiceRecorder.isRecording) {
+        _listenToUser();
+      }
       return;
     }
 
@@ -235,9 +239,7 @@ class VoiceModeProvider {
         logger.info('Stopped AI speaking');
         _speaker?.dispose();
         _speaker = null;
-      // if (isVoiceMode()) {
-      //   await _listenToUser();
-      // }
+        setStatus(ChatStatus.listeningToUser);
       default:
         break;
     }

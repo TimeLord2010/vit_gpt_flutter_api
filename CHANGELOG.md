@@ -1,3 +1,7 @@
+## 0.0.4
+
+* FIX: Stop voice interaction
+
 ## 0.0.3
 
 * FIX: Removed test error
