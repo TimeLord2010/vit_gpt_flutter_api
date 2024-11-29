@@ -129,6 +129,9 @@ class VoiceModeProvider {
 
   Future<void> _stopListening() async {
     try {
+      if (getStatus() == ChatStatus.idle) {
+        return;
+      }
       logger.info('Stop user listening');
       if (!voiceRecorder.isRecording) {
         return;
@@ -144,6 +147,9 @@ class VoiceModeProvider {
       logger.info('Transcription: $input');
 
       // Sending to model
+      if (getStatus() == ChatStatus.idle) {
+        return;
+      }
       setStatus(ChatStatus.thinking);
       audioVolumeStream = null;
       notifyListeners();

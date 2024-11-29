@@ -1,3 +1,7 @@
+## 0.0.6
+
+* FIX: Stop user listening if user canceled voice mode.
+
 ## 0.0.5
 
 * Refac: Stop voice interaction
