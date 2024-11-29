@@ -1,3 +1,9 @@
+## 0.1.0
+
+* FEAT: Removed vibration package.
+* FEAT: Dynamic function call for when user finishes speaking (by using `VitGptFlutterConfiguration`).
+* FIX: Removed call to non existing asset.
+
 ## 0.0.6
 
 * FIX: Stop user listening if user canceled voice mode.
