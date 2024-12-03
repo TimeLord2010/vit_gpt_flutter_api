@@ -134,6 +134,8 @@ class ConversationProvider with ChangeNotifier {
     super.dispose();
   }
 
+  // MARK: setup
+
   Future<void> setup() async {
     var c = originalConversation;
     if (c == null) {
@@ -163,6 +165,8 @@ class ConversationProvider with ChangeNotifier {
     notifyListeners();
     await setup();
   }
+
+  // MARK: send
 
   Future<void> send({
     BuildContext? context,
@@ -273,6 +277,8 @@ class ConversationProvider with ChangeNotifier {
     }
   }
 
+  // MARK: _showError
+
   Future<void> _showError({
     String? title,
     String? message,
@@ -298,6 +304,8 @@ class ConversationProvider with ChangeNotifier {
     );
     await controller.show();
   }
+
+  // MARK: delete
 
   Future<void> delete() async {
     Conversation? c = originalConversation ?? conversation;
