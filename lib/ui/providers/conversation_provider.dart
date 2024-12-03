@@ -29,7 +29,8 @@ class ConversationProvider with ChangeNotifier {
     required this.onCreate,
     this.originalConversation,
     this.onTextResponse,
-  });
+    Assistant? assistant,
+  }) : _assistant = assistant;
 
   final scrollController = ScrollController();
 

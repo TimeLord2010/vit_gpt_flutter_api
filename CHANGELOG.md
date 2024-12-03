@@ -1,3 +1,7 @@
+## 0.1.1
+
+* miniFEAT: `ConversationProvider` constructor with selected assistant
+
 ## 0.1.0
 
 * FEAT: Removed vibration package.
