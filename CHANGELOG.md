@@ -1,3 +1,7 @@
+## 0.2.0
+
+* FEAT: `ConversationsProvider` loads conversations in parallel.
+
 ## 0.1.1
 
 * miniFEAT: `ConversationProvider` constructor with selected assistant
