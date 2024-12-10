@@ -1,6 +1,6 @@
 name: vit_gpt_flutter_api
 description: "Collection of classes to save and connect to open ai resources"
-version: 0.2.0
+version: 0.3.0
 homepage:
 
 environment:
@@ -20,7 +20,7 @@ dependencies:
   shared_preferences: ^2.3.3
   sqlite3: ^2.5.0
   vit_dart_extensions: ^2.7.0
-  vit_gpt_dart_api: ^1.8.1
+  vit_gpt_dart_api: ^2.0.0
   vit_logger: ^2.1.1
 
 dev_dependencies:
@@ -28,10 +28,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
 
   # To add assets to your package, add an assets section, like this:

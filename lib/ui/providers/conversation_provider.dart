@@ -18,6 +18,7 @@ class ConversationProvider with ChangeNotifier {
   Conversation? originalConversation;
   final void Function(Conversation) onCreate;
   final void Function(String id) onDelete;
+  final void Function(Map<String, dynamic>)? onJsonComplete;
 
   /// Called after the user sent a message and the model finished responding
   /// by text.
@@ -29,6 +30,7 @@ class ConversationProvider with ChangeNotifier {
     required this.onCreate,
     this.originalConversation,
     this.onTextResponse,
+    this.onJsonComplete,
     Assistant? assistant,
   }) : _assistant = assistant;
 
@@ -226,6 +228,7 @@ class ConversationProvider with ChangeNotifier {
             message: exception.message,
           );
         },
+        onJsonComplete: onJsonComplete,
       );
       var text = controller.text;
 

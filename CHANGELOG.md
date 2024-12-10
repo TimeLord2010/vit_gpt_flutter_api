@@ -1,3 +1,7 @@
+## 0.3.0
+
+* FEAT: `ConversationProvider` now has onJsonComplete on constructor.
+
 ## 0.2.0
 
 * FEAT: `ConversationsProvider` loads conversations in parallel.
