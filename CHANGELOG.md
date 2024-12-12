@@ -1,3 +1,7 @@
+## 0.3.3
+
+* Log: Added logs to voice mode transcription
+
 ## 0.3.2
 
 * Fixed: Voice mode provider transcription

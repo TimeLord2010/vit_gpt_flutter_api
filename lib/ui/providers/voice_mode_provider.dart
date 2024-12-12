@@ -140,6 +140,7 @@ class VoiceModeProvider {
       String input = '';
       var transcriptionStream = transcriber?.transcribed;
       if (transcriptionStream != null) {
+        logger.debug('Looping transcriptions');
         await for (var chunk in transcriptionStream) {
           logger.info('Transcription result: $chunk');
           input = chunk;
