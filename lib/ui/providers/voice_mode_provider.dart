@@ -207,6 +207,7 @@ class VoiceModeProvider {
     } finally {}
 
     setStatus(ChatStatus.idle);
+    notifyListeners();
   }
 
   /// If the provider is listening to the microphone, it stops recording.

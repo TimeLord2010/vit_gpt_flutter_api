@@ -1,3 +1,7 @@
+## 0.3.4
+
+* FIX: Stop voice mode notifies the UI
+
 ## 0.3.3
 
 * Log: Added logs to voice mode transcription
