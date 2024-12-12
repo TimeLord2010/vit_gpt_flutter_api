@@ -1,3 +1,7 @@
+## 0.3.2
+
+* Fixed: Voice mode provider transcription
+
 ## 0.3.1
 
 * Updated dependencies

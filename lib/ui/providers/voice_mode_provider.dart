@@ -141,8 +141,8 @@ class VoiceModeProvider {
       var transcriptionStream = transcriber?.transcribed;
       if (transcriptionStream != null) {
         await for (var chunk in transcriptionStream) {
-          logger.info('Transcription chunk: $chunk');
-          input += chunk;
+          logger.info('Transcription result: $chunk');
+          input = chunk;
         }
         logger.info('Transcription: $input');
 
