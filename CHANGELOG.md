@@ -1,3 +1,8 @@
+## 0.3.1
+
+* Updated dependencies
+* Refac to comply with new `TranscribeModel` from dart api.
+
 ## 0.3.0
 
 * FEAT: `ConversationProvider` now has onJsonComplete on constructor.
