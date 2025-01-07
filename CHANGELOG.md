@@ -1,3 +1,7 @@
+## 0.4.0
+
+* FEAT: Prevent screen from turning off when in voice mode.
+
 ## 0.3.4
 
 * FIX: Stop voice mode notifies the UI
