@@ -22,6 +22,7 @@ dependencies:
   vit_dart_extensions: ^2.7.0
   vit_gpt_dart_api: ^2.4.0
   vit_logger: ^2.1.1
+  wakelock_plus: ^1.2.10
 
 dev_dependencies:
   flutter_test:

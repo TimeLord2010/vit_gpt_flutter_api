@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/enums/chat_status.dart';
 import '../../factories/logger.dart';
@@ -63,6 +64,10 @@ class VoiceModeProvider {
       return;
     }
     await _listenToUser();
+
+    // Preventing turning off the screen while the user is interacting using
+    // voice.
+    await WakelockPlus.enable();
   }
 
   Future<void> _getVoiceResponse(String input) async {
@@ -208,6 +213,9 @@ class VoiceModeProvider {
 
     setStatus(ChatStatus.idle);
     notifyListeners();
+
+    // Allow the screen to turn off again.
+    await WakelockPlus.disable();
   }
 
   /// If the provider is listening to the microphone, it stops recording.
