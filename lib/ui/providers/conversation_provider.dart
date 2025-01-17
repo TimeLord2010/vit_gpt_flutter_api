@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flash/flash.dart';
 import 'package:flutter/material.dart';
 import 'package:vit_dart_extensions/vit_dart_extensions.dart';
+import 'package:vit_gpt_dart_api/factories/create_assistant_repository.dart';
 import 'package:vit_gpt_dart_api/factories/http_client.dart';
-import 'package:vit_gpt_dart_api/repositories/assistant_repository.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 
 import '../../data/enums/chat_status.dart';
@@ -209,11 +209,8 @@ class ConversationProvider with ChangeNotifier {
           messages: conversation!.messages,
         );
       } else {
-        completion = AssistantRepository(
-          dio: httpClient,
-          assistantId: assistant!.id,
-          threadId: conversation!.id!,
-        );
+        var rep = createAssistantRepository(assistant!.id, conversation!.id!);
+        completion = rep;
       }
       var rep = ConversationRepository(
         conversation: conversation!,

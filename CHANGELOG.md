@@ -1,3 +1,7 @@
+## 0.4.1
+
+* FEAT: Using assistant repository factory on `ConversationProvider`.
+
 ## 0.4.0
 
 * FEAT: Prevent screen from turning off when in voice mode.
