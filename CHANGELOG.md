@@ -1,6 +1,6 @@
 ## 0.4.2
 
-* BUILD: Updated dependencies.
+* FIX: handling transcription in voice mode provider.
 
 ## 0.4.1
 

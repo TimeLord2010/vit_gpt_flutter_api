@@ -144,9 +144,9 @@ class VoiceModeProvider {
       // Transcribe to create self message
       setStatus(ChatStatus.transcribing);
       notifyListeners();
+      var transcriptionStream = transcriber?.transcribed;
       await transcriber?.endTranscription();
       String input = '';
-      var transcriptionStream = transcriber?.transcribed;
       if (transcriptionStream != null) {
         logger.debug('Looping transcriptions');
         await for (var chunk in transcriptionStream) {
