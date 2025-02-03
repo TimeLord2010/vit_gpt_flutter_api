@@ -15,7 +15,7 @@ import 'voice_mode_provider.dart';
 
 class ConversationProvider with ChangeNotifier {
   final BuildContext context;
-  Conversation? originalConversation;
+  Conversation? conversation;
   final void Function(Conversation) onCreate;
   final void Function(String id) onDelete;
   final void Function(Map<String, dynamic>)? onJsonComplete;
@@ -24,15 +24,25 @@ class ConversationProvider with ChangeNotifier {
   /// by text.
   final void Function(ConversationProvider self)? onTextResponse;
 
+  /// [lazyConversationCreation]:
+  /// Has no effect if [conversation] is not null.
+  ///
+  /// If true, creates a thread when the user sends the first message.
+  /// Otherwise, it is created when the class is created.
   ConversationProvider({
     required this.context,
     required this.onDelete,
     required this.onCreate,
-    this.originalConversation,
+    this.conversation,
     this.onTextResponse,
     this.onJsonComplete,
     Assistant? assistant,
-  }) : _assistant = assistant;
+    bool lazyConversationCreation = false,
+  }) : _assistant = assistant {
+    if (!lazyConversationCreation) {
+      _createConversationIfNecessary();
+    }
+  }
 
   final scrollController = ScrollController();
 
@@ -63,8 +73,6 @@ class ConversationProvider with ChangeNotifier {
       );
     },
   );
-
-  Conversation? conversation;
 
   Assistant? _assistant;
   Assistant? get assistant => _assistant;
@@ -117,15 +125,11 @@ class ConversationProvider with ChangeNotifier {
     var title = getTitle(conversation);
     if (title != null) return title;
 
-    var originalTitle = getTitle(originalConversation);
-    if (originalTitle != null) {
-      return originalTitle;
-    }
     return 'Nova conversa';
   }
 
   List<Message> get messages {
-    return originalConversation?.messages ?? conversation?.messages ?? [];
+    return conversation?.messages ?? [];
   }
 
   // MARK: METHODS
@@ -138,8 +142,9 @@ class ConversationProvider with ChangeNotifier {
 
   // MARK: setup
 
+  /// Loads messages from the conversation and sorts them by date.
   Future<void> setup() async {
-    var c = originalConversation;
+    var c = conversation;
     if (c == null) {
       logger.warn('Aborting messages load: no original conversation');
       return;
@@ -162,10 +167,18 @@ class ConversationProvider with ChangeNotifier {
   }
 
   Future<void> updateConversation(Conversation? conversation) async {
-    originalConversation = conversation;
     this.conversation = conversation;
     notifyListeners();
     await setup();
+  }
+
+  Future<void> _createConversationIfNecessary() async {
+    if (conversation != null) {
+      return;
+    }
+    var created = await createThread();
+    conversation = created;
+    onCreate(created);
   }
 
   // MARK: send
@@ -182,16 +195,7 @@ class ConversationProvider with ChangeNotifier {
       status = ChatStatus.sendingPrompt;
       notifyListeners();
 
-      // Ensuring conversation is not null.
-      if (conversation == null) {
-        if (originalConversation != null) {
-          conversation = originalConversation;
-        } else {
-          var created = await createThread();
-          conversation = created;
-          onCreate(created);
-        }
-      }
+      await _createConversationIfNecessary();
 
       // Updating 'lastUpdate' date of conversation
       var updated = conversation!.recordUpdate();
@@ -310,13 +314,11 @@ class ConversationProvider with ChangeNotifier {
   // MARK: delete
 
   Future<void> delete() async {
-    Conversation? c = originalConversation ?? conversation;
-    if (c == null) {
-      return;
-    }
+    Conversation? c = conversation;
 
-    var id = c.id;
+    var id = c?.id;
     if (id == null) {
+      logger.warn('Unabled to delete conversation without an id');
       return;
     }
 
