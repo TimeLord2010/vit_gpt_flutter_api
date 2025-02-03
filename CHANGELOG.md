@@ -1,3 +1,7 @@
+## 0.4.2
+
+* BUILD: Updated dependencies.
+
 ## 0.4.1
 
 * FEAT: Using assistant repository factory on `ConversationProvider`.

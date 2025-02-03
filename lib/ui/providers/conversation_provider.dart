@@ -206,7 +206,6 @@ class ConversationProvider with ChangeNotifier {
         completion = CompletionRepository(
           dio: httpClient,
           model: model ?? GptModel.gpt4oMini,
-          messages: conversation!.messages,
         );
       } else {
         var rep = createAssistantRepository(assistant!.id, conversation!.id!);
@@ -240,7 +239,10 @@ class ConversationProvider with ChangeNotifier {
       // Streaming response
       controller.clear();
       await rep.prompt(
-        text,
+        message: text,
+        previousMessages: [
+          if (assistant == null) ...conversation!.messages,
+        ],
         onChunk: (msg, chunk) {
           if (status != ChatStatus.answeringAndSpeaking) {
             status = ChatStatus.answering;

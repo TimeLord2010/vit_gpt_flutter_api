@@ -70,6 +70,7 @@ class VoiceModeProvider {
     await WakelockPlus.enable();
   }
 
+  /// Sends message to model, and speaks the model response as it gets streamed.
   Future<void> _getVoiceResponse(String input) async {
     logger.info('Geting voice response');
 
@@ -129,6 +130,8 @@ class VoiceModeProvider {
     });
   }
 
+  /// Stops listening to the user, transcribes the audio to text, and gets
+  /// voice response.
   Future<void> _stopListening() async {
     try {
       if (getStatus() == ChatStatus.idle) {
