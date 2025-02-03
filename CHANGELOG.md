@@ -1,3 +1,8 @@
+## 0.5.0
+
+- FEAT: Creates a thread/conversation in the API when `ConversationProvider` is created instead of
+when the user first sends a message.
+
 ## 0.4.3
 
 * BUILD: Updated dependencies.

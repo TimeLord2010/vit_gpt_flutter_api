@@ -1,6 +1,6 @@
 name: vit_gpt_flutter_api
 description: "Collection of classes to save and connect to open ai resources"
-version: 0.4.3
+version: 0.5.0
 repository: https://github.com/TimeLord2010/vit_gpt_flutter_api
 
 environment:
