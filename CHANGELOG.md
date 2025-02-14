@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Build: updated dependencies
+
 ## 1.0.0
 
 - Feat: `ConversationsProvider` now can ignore updatedAt on sort.
