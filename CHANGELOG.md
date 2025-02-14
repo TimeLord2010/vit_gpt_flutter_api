@@ -1,3 +1,7 @@
+## 1.0.0
+
+- Feat: `ConversationsProvider` now can ignore updatedAt on sort.
+
 ## 0.5.0
 
 - FEAT: Creates a thread/conversation in the API when `ConversationProvider` is created instead of

@@ -10,7 +10,12 @@ class ConversationsProvider extends ChangeNotifier
     with PaginatedRepository<Conversation> {
   final BuildContext context;
 
-  ConversationsProvider(this.context);
+  final bool ignoreUpdatedAtOnSort;
+
+  ConversationsProvider(
+    this.context, {
+    this.ignoreUpdatedAtOnSort = false,
+  });
 
   List<Conversation> conversations = [];
 
@@ -43,6 +48,8 @@ class ConversationsProvider extends ChangeNotifier
       var stream = streamAll();
       stream.listen((conversation) {
         debugPrint('Loaded conversations ${conversation.map((x) => x.id)}');
+      }, onDone: () {
+        _sort();
       });
       // for (var id in ids) {
       //   _loadConversation(
@@ -90,27 +97,39 @@ class ConversationsProvider extends ChangeNotifier
           );
         },
       );
+    } finally {
+      _sort();
     }
+  }
+
+  void _sort() {
     conversations.sortByDate((x) {
+      if (ignoreUpdatedAtOnSort) {
+        return x.createdAt ?? DateTime.now();
+      }
       return x.updatedAt ?? x.createdAt ?? DateTime.now();
     }, false);
   }
 
   void add(Conversation newConversation) {
-    var id = newConversation.id;
-    if (id == null) {
-      return;
-    }
+    try {
+      var id = newConversation.id;
+      if (id == null) {
+        return;
+      }
 
-    var oldConversationIndex = conversations.indexWhere((x) => x.id == id);
-    if (oldConversationIndex >= 0) {
-      conversations.removeAt(oldConversationIndex);
-      conversations.insert(oldConversationIndex, newConversation);
-      return;
-    }
+      var oldConversationIndex = conversations.indexWhere((x) => x.id == id);
+      if (oldConversationIndex >= 0) {
+        conversations.removeAt(oldConversationIndex);
+        conversations.insert(oldConversationIndex, newConversation);
+        return;
+      }
 
-    conversations.insert(0, newConversation);
-    notifyListeners();
+      conversations.insert(0, newConversation);
+      notifyListeners();
+    } finally {
+      _sort();
+    }
   }
 
   void delete(String id) {
