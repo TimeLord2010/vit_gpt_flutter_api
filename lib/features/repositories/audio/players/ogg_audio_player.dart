@@ -1,46 +1,58 @@
-import 'package:ogg_opus_player/ogg_opus_player.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart' as api;
 
 class OggAudioPlayer extends api.SimpleAudioPlayer {
   final String path;
-  OggOpusPlayer _player;
+  final player = SoLoud.instance;
 
-  OggAudioPlayer(this.path) : _player = OggOpusPlayer(path);
+  OggAudioPlayer(this.path);
+
+  SoundHandle? soundHandle;
 
   @override
   Future<void> play() async {
-    _player.play();
+    if (!player.isInitialized) {
+      await player.init();
+    }
+
+    AudioSource source = await player.loadFile(path);
+    soundHandle = await player.play(source);
   }
 
   @override
   Future<void> stop() async {
+    soundHandle = null;
     await dispose();
-    _player = OggOpusPlayer(path);
   }
 
   @override
   Future<void> dispose() async {
-    _player.pause();
-    _player.dispose();
+    await player.disposeAllSources();
   }
 
   @override
   Future<void> pause() async {
-    _player.pause();
+    var handle = soundHandle;
+    if (handle == null) return;
+    player.setPause(handle, true);
   }
 
   @override
-  double get positionInSeconds => _player.currentPosition;
+  double get positionInSeconds {
+    var handle = soundHandle;
+    if (handle == null) return 0;
+    return player.getPosition(handle).inMilliseconds / 1000;
+  }
 
   @override
   api.PlayerState get state {
-    return switch (_player.state.value) {
-      PlayerState.playing => api.PlayerState.playing,
-      PlayerState.paused => api.PlayerState.paused,
-      PlayerState.ended => api.PlayerState.stopped,
-      PlayerState.error => api.PlayerState.stopped,
-      PlayerState.idle => api.PlayerState.paused,
-    };
+    var handle = soundHandle;
+    if (handle == null) return api.PlayerState.stopped;
+
+    var isPaused = player.getPause(handle);
+    if (isPaused) return api.PlayerState.paused;
+
+    return api.PlayerState.playing;
   }
 
   @override

@@ -1,3 +1,7 @@
+## 1.1.0
+
+- Fix: Uses a new package for the ogg player so we can build on android platform.
+
 ## 1.0.1
 
 - Build: updated dependencies

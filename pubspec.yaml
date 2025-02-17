@@ -1,6 +1,6 @@
 name: vit_gpt_flutter_api
 description: "Collection of classes to save and connect to open ai resources"
-version: 1.0.1
+version: 1.1.0
 repository: https://github.com/TimeLord2010/vit_gpt_flutter_api
 
 environment:
@@ -12,9 +12,9 @@ dependencies:
   flash: ^3.1.1
   flutter:
     sdk: flutter
+  flutter_soloud: ^3.0.0
   get_it: ^8.0.2
   just_audio: ^0.9.42
-  ogg_opus_player: ^0.7.0
   path_provider: ^2.1.5
   record: ^5.2.0
   shared_preferences: ^2.3.3
