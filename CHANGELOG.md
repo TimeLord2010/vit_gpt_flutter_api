@@ -1,3 +1,8 @@
+## 1.2.6
+
+- Build: updated dependencies
+- Refac: new player for mp3 files
+
 ## 1.2.5
 
 - Feat: `RealtimeVoiceModeProvider` now exposes their `RealtimeModel`.

@@ -23,7 +23,7 @@ class VitAudioPlayer extends AudioPlayer with ChangeNotifier {
       return Mp3AudioPlayer(
         name,
         isAsset: isAsset,
-        randomizeVolumeStream: randomizeVolumeStream,
+        //randomizeVolumeStream: randomizeVolumeStream,
       );
     }
 
