@@ -6,6 +6,8 @@ import 'package:vit_dart_extensions/vit_dart_extensions.dart';
 import 'package:vit_gpt_dart_api/factories/create_assistant_repository.dart';
 import 'package:vit_gpt_dart_api/factories/http_client.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
+import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
+import 'package:vit_gpt_flutter_api/ui/providers/realtime_voice_mode_provider.dart';
 
 import '../../data/enums/chat_status.dart';
 import '../../factories/logger.dart';
@@ -51,7 +53,7 @@ class ConversationProvider with ChangeNotifier {
 
   final controller = TextEditingController();
 
-  late final voiceModeProvider = VoiceModeProvider(
+  late VoiceModeContract voiceModeProvider = VoiceModeProvider(
     errorReporter: (context, message) {
       _showError(
         title: context,
@@ -342,5 +344,77 @@ class ConversationProvider with ChangeNotifier {
 
   void updateUI() {
     notifyListeners();
+  }
+
+  void updateVoiceMode(bool useRealtime) {
+    voiceModeProvider.stopVoiceMode();
+    voiceModeProvider.dispose();
+
+    if (useRealtime) {
+      var p = RealtimeVoiceModeProvider(
+        setStatus: (status) {
+          this.status = status;
+        },
+        addUserText: (text) {
+          var lastMessage = messages.lastOrNull;
+
+          if (lastMessage == null || lastMessage.sender != SenderType.user) {
+            messages.add(Message.user(
+              message: text,
+            ));
+            notifyListeners();
+            return;
+          }
+
+          lastMessage.text += text;
+          notifyListeners();
+        },
+        addAiText: (text) {
+          var lastMsg = messages.lastOrNull;
+
+          if (lastMsg == null || lastMsg.sender != SenderType.assistant) {
+            messages.add(Message.assistant(
+              message: text,
+            ));
+            notifyListeners();
+            return;
+          }
+
+          lastMsg.text += text;
+          notifyListeners();
+        },
+        onError: (errorMessage) {
+          _showError(
+            title: 'Erro',
+            message: errorMessage,
+          );
+        },
+      );
+
+      voiceModeProvider = p;
+    } else {
+      voiceModeProvider = VoiceModeProvider(
+        errorReporter: (context, message) {
+          _showError(
+            title: context,
+            message: message,
+          );
+        },
+        notifyListeners: () => notifyListeners(),
+        isVoiceMode: () => isVoiceMode,
+        setStatus: (status) => this.status = status,
+        getStatus: () => status,
+        send: ({
+          required onChunk,
+          required text,
+        }) async {
+          controller.text = text;
+          await send(
+            onChunk: onChunk,
+            endStatus: null,
+          );
+        },
+      );
+    }
   }
 }

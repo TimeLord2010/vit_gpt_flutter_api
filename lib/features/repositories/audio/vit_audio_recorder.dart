@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:record/record.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 
@@ -38,6 +40,14 @@ class VitAudioRecorder extends AudioRecorderModel {
     );
   }
 
+  Future<Stream<Uint8List>> startStream() {
+    return _recorder.startStream(RecordConfig(
+      encoder: AudioEncoder.pcm16bits,
+      sampleRate: 24000,
+      echoCancel: true,
+    ));
+  }
+
   @override
   Future<String?> stop() async {
     var result = _recorder.stop();
@@ -53,6 +63,10 @@ class VitAudioRecorder extends AudioRecorderModel {
       //logger.debug('Audio intensity: $current');
       return current;
     });
+  }
+
+  Future<bool> isRecording() {
+    return _recorder.isRecording();
   }
 }
 
