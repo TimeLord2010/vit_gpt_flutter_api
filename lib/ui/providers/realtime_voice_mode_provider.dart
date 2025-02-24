@@ -8,6 +8,7 @@ import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class RealtimeVoiceModeProvider with VoiceModeContract {
   final void Function(ChatStatus) _setStatus;
@@ -93,12 +94,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       soloud.addAudioDataStream(source, bytes);
     });
 
+    rep.onConnectionClose.listen((_) {
+      setStatus(ChatStatus.idle);
+    });
+
     rep.onError.listen((error) {
       String msg = getErrorMessage(error) ?? 'Falha desconhecida';
       onError(msg);
     });
 
     _isVoiceMode = true;
+    // Preventing turning off the screen while the user is interacting using
+    // voice.
+    await WakelockPlus.enable();
   }
 
   double _calculatePcm16Volume(Uint8List bytes) {
@@ -128,6 +136,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     _realtimeModel = null;
 
     _isVoiceMode = false;
+    // Allow the screen to turn off again.
+    await WakelockPlus.disable();
   }
 
   @override

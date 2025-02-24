@@ -354,6 +354,7 @@ class ConversationProvider with ChangeNotifier {
       var p = RealtimeVoiceModeProvider(
         setStatus: (status) {
           this.status = status;
+          notifyListeners();
         },
         addUserText: (text) {
           var lastMessage = messages.lastOrNull;

@@ -68,11 +68,12 @@ class VoiceModeProvider with VoiceModeContract {
     if (isVoiceMode()) {
       return;
     }
-    await _listenToUser();
 
     // Preventing turning off the screen while the user is interacting using
     // voice.
-    await WakelockPlus.enable();
+    WakelockPlus.enable();
+
+    await _listenToUser();
   }
 
   /// Sends message to model, and speaks the model response as it gets streamed.

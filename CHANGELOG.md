@@ -1,3 +1,8 @@
+## 1.2.1
+
+- Fix: `RealtimeVoiceMode` now notifies the ui for changes.
+- Feat: `RealtimeVoiceMode` now prevents the screen from listening.
+
 ## 1.2.0
 
 - Feat: Realtime voice mode.
