@@ -8,7 +8,12 @@ import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
+import 'package:vit_logger/vit_logger.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+
+var _logger = TerminalLogger(
+  event: 'RealtimeVoiceModeProvider',
+);
 
 class RealtimeVoiceModeProvider with VoiceModeContract {
   final void Function(ChatStatus) _setStatus;
@@ -78,16 +83,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     SoLoud.instance.play(source);
 
     rep.onUserText.listen((text) {
+      _logger.debug('Received text from user');
       setStatus(ChatStatus.transcribing);
       addUserText(text);
     });
 
     rep.onAiText.listen((text) {
+      _logger.debug('Received text from AI');
       setStatus(ChatStatus.answering);
       addAiText(text);
     });
 
     rep.onAiAudio.listen((Uint8List bytes) {
+      _logger.debug('Received audio from AI');
       setStatus(ChatStatus.speaking);
       soloud.addAudioDataStream(source, bytes);
     });
@@ -145,7 +153,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   void stopVoiceInteraction() {
-    // Does nothing for now.
+    _realtimeModel?.commitUserAudio();
   }
 
   @override

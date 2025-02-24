@@ -1,3 +1,7 @@
+## 1.2.4
+
+- Feat: `RealtimeVoiceMode` now implements the method "commitUserAudio".
+
 ## 1.2.3
 
 - Fix: `RealtimeVoiceMode` correctly notifed the UI when the voice mode is stopped.
