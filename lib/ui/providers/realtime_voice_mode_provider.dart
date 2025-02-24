@@ -75,9 +75,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       format: BufferType.s16le,
       bufferingType: BufferingType.released,
     );
-    await SoLoud.instance.play(source);
-
-    _startRecording();
+    SoLoud.instance.play(source);
 
     rep.onUserText.listen((text) {
       setStatus(ChatStatus.transcribing);
@@ -104,6 +102,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     });
 
     _isVoiceMode = true;
+    _startRecording();
+
     // Preventing turning off the screen while the user is interacting using
     // voice.
     await WakelockPlus.enable();
@@ -121,6 +121,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   Future<void> _startRecording() async {
+    setStatus(ChatStatus.listeningToUser);
     Stream<Uint8List> userAudioStream = await recorder.startStream();
 
     userAudioStream.listen((bytes) {

@@ -1,3 +1,7 @@
+## 1.2.2
+
+- Fix: `RealtimeVoiceMode` notifies correctly the UI when the class is listening to the user.
+
 ## 1.2.1
 
 - Fix: `RealtimeVoiceMode` now notifies the ui for changes.
