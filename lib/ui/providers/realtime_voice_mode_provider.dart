@@ -137,6 +137,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     _realtimeModel = null;
 
     _isVoiceMode = false;
+    setStatus(ChatStatus.idle);
+
     // Allow the screen to turn off again.
     await WakelockPlus.disable();
   }

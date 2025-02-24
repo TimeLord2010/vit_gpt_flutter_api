@@ -1,6 +1,6 @@
 name: vit_gpt_flutter_api
 description: "Collection of classes to save and connect to open ai resources"
-version: 1.2.2
+version: 1.2.3
 repository: https://github.com/TimeLord2010/vit_gpt_flutter_api
 
 environment:
@@ -20,7 +20,7 @@ dependencies:
   shared_preferences: ^2.3.3
   sqlite3: ^2.5.0
   vit_dart_extensions: ^3.0.0
-  vit_gpt_dart_api: ^3.3.1
+  vit_gpt_dart_api: ^3.3.2
   vit_logger: ^2.1.1
   wakelock_plus: ^1.2.10
 

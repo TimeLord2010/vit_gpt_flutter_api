@@ -1,3 +1,7 @@
+## 1.2.3
+
+- Fix: `RealtimeVoiceMode` correctly notifed the UI when the voice mode is stopped.
+
 ## 1.2.2
 
 - Fix: `RealtimeVoiceMode` notifies correctly the UI when the class is listening to the user.
