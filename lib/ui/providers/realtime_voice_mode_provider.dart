@@ -58,6 +58,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   Future<void> startVoiceMode() async {
+    _logger.info('Starting voice mode');
     realtimeModel?.close();
 
     if (!soloud.isInitialized) {
