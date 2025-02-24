@@ -1,19 +1,23 @@
+## 1.2.5
+
+- Feat: `RealtimeVoiceModeProvider` now exposes their `RealtimeModel`.
+
 ## 1.2.4
 
-- Feat: `RealtimeVoiceMode` now implements the method "commitUserAudio".
+- Feat: `RealtimeVoiceModeProvider` now implements the method "commitUserAudio".
 
 ## 1.2.3
 
-- Fix: `RealtimeVoiceMode` correctly notifed the UI when the voice mode is stopped.
+- Fix: `RealtimeVoiceModeProvider` correctly notifed the UI when the voice mode is stopped.
 
 ## 1.2.2
 
-- Fix: `RealtimeVoiceMode` notifies correctly the UI when the class is listening to the user.
+- Fix: `RealtimeVoiceModeProvider` notifies correctly the UI when the class is listening to the user.
 
 ## 1.2.1
 
-- Fix: `RealtimeVoiceMode` now notifies the ui for changes.
-- Feat: `RealtimeVoiceMode` now prevents the screen from listening.
+- Fix: `RealtimeVoiceModeProvider` now notifies the ui for changes.
+- Feat: `RealtimeVoiceModeProvider` now prevents the screen from listening.
 
 ## 1.2.0
 

@@ -35,7 +35,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final recorder = VitAudioRecorder();
 
   /// Class that handles the api calls to the real time api.
-  RealtimeModel? _realtimeModel;
+  RealtimeModel? realtimeModel;
 
   /// Helper vairable for [isInVoiceMode].
   bool _isVoiceMode = false;
@@ -58,14 +58,14 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   Future<void> startVoiceMode() async {
-    _realtimeModel?.close();
+    realtimeModel?.close();
 
     if (!soloud.isInitialized) {
       await soloud.init();
     }
 
     var rep = createRealtimeRepository();
-    _realtimeModel = rep;
+    realtimeModel = rep;
     rep.open();
 
     if (currentSound != null) {
@@ -133,7 +133,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     Stream<Uint8List> userAudioStream = await recorder.startStream();
 
     userAudioStream.listen((bytes) {
-      _realtimeModel?.sendUserAudio(bytes);
+      realtimeModel?.sendUserAudio(bytes);
       var volume = _calculatePcm16Volume(bytes);
       _audioVolumeStreamController.add(volume);
     });
@@ -141,8 +141,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   Future<void> stopVoiceMode() async {
-    _realtimeModel?.close();
-    _realtimeModel = null;
+    realtimeModel?.close();
+    realtimeModel = null;
 
     _isVoiceMode = false;
     setStatus(ChatStatus.idle);
@@ -153,7 +153,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   void stopVoiceInteraction() {
-    _realtimeModel?.commitUserAudio();
+    realtimeModel?.commitUserAudio();
   }
 
   @override
