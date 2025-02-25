@@ -1,3 +1,7 @@
+## 1.3.1
+
+- Fix: `VitAudioRecorder`.startStream now produces mono audio data.
+
 ## 1.3.0
 
 - Feat: Method "startVoiceMode" in `VoiceModeContract` now optionally returns RealtimeModel.

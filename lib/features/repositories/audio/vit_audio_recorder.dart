@@ -45,6 +45,7 @@ class VitAudioRecorder extends AudioRecorderModel {
       encoder: AudioEncoder.pcm16bits,
       sampleRate: 24000,
       echoCancel: true,
+      numChannels: 1,
     ));
   }
 
