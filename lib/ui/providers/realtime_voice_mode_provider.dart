@@ -57,7 +57,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   bool get isInVoiceMode => _isVoiceMode;
 
   @override
-  Future<void> startVoiceMode() async {
+  Future<RealtimeModel> startVoiceMode() async {
     _logger.info('Starting voice mode');
     realtimeModel?.close();
 
@@ -101,6 +101,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       soloud.addAudioDataStream(source, bytes);
     });
 
+    rep.onConnectionOpen.listen((_) {
+      _startRecording();
+    });
+
     rep.onConnectionClose.listen((_) {
       setStatus(ChatStatus.idle);
     });
@@ -111,11 +115,12 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     });
 
     _isVoiceMode = true;
-    _startRecording();
 
     // Preventing turning off the screen while the user is interacting using
     // voice.
-    await WakelockPlus.enable();
+    WakelockPlus.enable();
+
+    return rep;
   }
 
   double _calculatePcm16Volume(Uint8List bytes) {

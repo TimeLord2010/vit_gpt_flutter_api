@@ -1,3 +1,4 @@
+import 'package:vit_gpt_dart_api/data/interfaces/realtime_model.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
 
 mixin VoiceModeContract {
@@ -20,7 +21,7 @@ mixin VoiceModeContract {
 
   Future<void> stopVoiceMode();
 
-  Future<void> startVoiceMode();
+  Future<RealtimeModel?> startVoiceMode();
 
   void dispose();
 

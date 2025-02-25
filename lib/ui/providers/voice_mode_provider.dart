@@ -64,9 +64,9 @@ class VoiceModeProvider with VoiceModeContract {
   }
 
   @override
-  Future<void> startVoiceMode() async {
+  Future<RealtimeModel?> startVoiceMode() async {
     if (isVoiceMode()) {
-      return;
+      return null;
     }
 
     // Preventing turning off the screen while the user is interacting using
@@ -74,6 +74,7 @@ class VoiceModeProvider with VoiceModeContract {
     WakelockPlus.enable();
 
     await _listenToUser();
+    return null;
   }
 
   /// Sends message to model, and speaks the model response as it gets streamed.

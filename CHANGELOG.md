@@ -1,3 +1,8 @@
+## 1.3.0
+
+- Feat: Method "startVoiceMode" in `VoiceModeContract` now optionally returns RealtimeModel.
+- Fix: Only begins to records user audio when the connection in opened in `RealtimeVoiceModeProvider`.
+
 ## 1.2.6
 
 - Build: updated dependencies
