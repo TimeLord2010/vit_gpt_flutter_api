@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
@@ -39,10 +38,36 @@ class DisposeSoLoud extends SoLoudMessage {}
 
 class DisposeCurrentSound extends SoLoudMessage {}
 
+Future<(Isolate, SendPort)> computeIsolate() async {
+  final receivePort = ReceivePort();
+  var rootToken = RootIsolateToken.instance!;
+  var isolate = await Isolate.spawn<_IsolateData>(
+    _isolateEntry,
+    _IsolateData(
+      token: rootToken,
+      answerPort: receivePort.sendPort,
+    ),
+  );
+  return (isolate, receivePort.first as SendPort);
+}
+
+void _isolateEntry(_IsolateData isolateData) async {
+  BackgroundIsolateBinaryMessenger.ensureInitialized(isolateData.token);
+  soLoudIsolate(isolateData.answerPort);
+}
+
+class _IsolateData {
+  final RootIsolateToken token;
+  final SendPort answerPort;
+
+  _IsolateData({
+    required this.token,
+    required this.answerPort,
+  });
+}
+
 // Isolate entry function
 void soLoudIsolate(SendPort sendPort) async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   // Initialize SoLoud
   await SoLoud.instance.init(automaticCleanup: true);
 
@@ -136,14 +161,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   bool get isInVoiceMode => _isVoiceMode;
 
   Future<void> _startSoLoudIsolate() async {
-    var rootIsolateToken = ServicesBinding.rootIsolateToken;
-    if (rootIsolateToken != null) {
-      BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
-    }
-
-    final receivePort = ReceivePort();
-    _soLoudIsolate = await Isolate.spawn(soLoudIsolate, receivePort.sendPort);
-    _soLoudSendPort = await receivePort.first as SendPort;
+    var (isolate, send) = await computeIsolate();
+    _soLoudIsolate = isolate;
+    _soLoudSendPort = send;
   }
 
   Future<void> _stopSoLoudIsolate() async {
