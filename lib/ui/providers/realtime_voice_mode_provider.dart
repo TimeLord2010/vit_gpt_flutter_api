@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
@@ -15,6 +15,9 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 var _logger = TerminalLogger(
   event: 'RealtimeVoiceModeProvider',
 );
+
+// Helper function to decode base64 in an isolate.
+Uint8List decodeBase64(String data) => base64Decode(data);
 
 class RealtimeVoiceModeProvider with VoiceModeContract {
   final void Function(ChatStatus) _setStatus;
@@ -38,7 +41,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   /// Class that handles the api calls to the real time api.
   RealtimeModel? realtimeModel;
 
-  /// Helper vairable for [isInVoiceMode].
+  /// Helper variable for [isInVoiceMode].
   bool _isVoiceMode = false;
 
   /// Reference to AI speech player.
@@ -48,7 +51,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   final _audioVolumeStreamController = StreamController<double>();
 
-  /// Helper variable to prevent unecessary calls to [setStatus].
+  /// Helper variable to prevent unnecessary calls to [setStatus].
   ChatStatus? _oldStatus;
 
   @override
@@ -82,8 +85,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       format: BufferType.s16le,
       bufferingType: BufferingType.released,
     );
-    SoLoud.instance.play(source);
 
+    SoLoud.instance.play(source);
     rep.onUserText.listen((text) {
       _logger.debug('Received text from user');
       setStatus(ChatStatus.transcribing);
@@ -100,12 +103,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       setStatus(ChatStatus.speaking);
       soloud.addAudioDataStream(source, bytes);
     });
-
-    rep.onRawAiAudio.listen((String base64Data) {
+    rep.onRawAiAudio.listen((String base64Data) async {
       setStatus(ChatStatus.speaking);
 
-      // TODO: Perform the code bellow in a isolate (decode and addAudioData).
-      var bytes = base64Decode(base64Data);
+      var bytes = await compute(decodeBase64, base64Data);
       SoLoud.instance.addAudioDataStream(source, bytes);
     });
 
@@ -173,8 +174,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   void setStatus(ChatStatus status) {
-    // Preventing unecessary calls.
-
+    // Preventing unnecessary calls.
     // Old status is the same as the new status.
     if (status == _oldStatus) {
       return;
@@ -186,7 +186,6 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     }
 
     _oldStatus = status;
-
     _setStatus(status);
   }
 }

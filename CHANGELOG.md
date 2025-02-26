@@ -1,3 +1,7 @@
+## 1.4.0
+
+- Feat: `RealtimeVoiceModeProvider` spawns an isolate to decode the base64 data.
+
 ## 1.3.1
 
 - Fix: `VitAudioRecorder`.startStream now produces mono audio data.
