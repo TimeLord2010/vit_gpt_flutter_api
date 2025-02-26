@@ -1,3 +1,7 @@
+## 1.5.1
+
+- Feat: `RealtimeVoiceModeProvider` use isolate extensively.
+
 ## 1.5.0
 
 - Feat: Audio player now has "useLegacyAudioPlayer".

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
@@ -16,8 +18,80 @@ var _logger = TerminalLogger(
   event: 'RealtimeVoiceModeProvider',
 );
 
-// Helper function to decode base64 in an isolate.
-Uint8List decodeBase64(String data) => base64Decode(data);
+// Message classes for communication with the isolate
+abstract class SoLoudMessage {}
+
+class InitializeSoLoud extends SoLoudMessage {}
+
+class PlayAudioData extends SoLoudMessage {
+  final Uint8List audioData;
+  PlayAudioData(this.audioData);
+}
+
+class PlayBase64AudioData extends SoLoudMessage {
+  final String base64Data;
+  PlayBase64AudioData(this.base64Data);
+}
+
+class ResetStreamPlayer extends SoLoudMessage {}
+
+class DisposeSoLoud extends SoLoudMessage {}
+
+class DisposeCurrentSound extends SoLoudMessage {}
+
+// Isolate entry function
+void soLoudIsolate(SendPort sendPort) async {
+  // Initialize SoLoud
+  await SoLoud.instance.init(automaticCleanup: true);
+
+  AudioSource? currentSound;
+
+  // Create a ReceivePort to receive messages from main isolate
+  final receivePort = ReceivePort();
+
+  // Send back the SendPort to the main isolate
+  sendPort.send(receivePort.sendPort);
+
+  // Listen for messages
+  await for (var msg in receivePort) {
+    if (msg is SoLoudMessage) {
+      if (msg is PlayAudioData) {
+        if (currentSound != null) {
+          SoLoud.instance.addAudioDataStream(currentSound, msg.audioData);
+        }
+      } else if (msg is PlayBase64AudioData) {
+        Uint8List bytes = base64Decode(msg.base64Data);
+        if (currentSound != null) {
+          SoLoud.instance.addAudioDataStream(currentSound, bytes);
+        }
+      } else if (msg is ResetStreamPlayer) {
+        // Dispose of the current sound and create a new one
+        if (currentSound != null) {
+          SoLoud.instance.setDataIsEnded(currentSound);
+          SoLoud.instance.disposeSource(currentSound);
+        }
+        currentSound = SoLoud.instance.setBufferStream(
+          maxBufferSizeDuration: const Duration(minutes: 10),
+          bufferingTimeNeeds: 1,
+          sampleRate: 24000,
+          channels: Channels.mono,
+          format: BufferType.s16le,
+          bufferingType: BufferingType.released,
+        );
+        SoLoud.instance.play(currentSound);
+      } else if (msg is DisposeCurrentSound) {
+        if (currentSound != null) {
+          SoLoud.instance.setDataIsEnded(currentSound);
+          SoLoud.instance.disposeSource(currentSound);
+          currentSound = null;
+        }
+      } else if (msg is DisposeSoLoud) {
+        SoLoud.instance.disposeAllSources();
+        break;
+      }
+    }
+  }
+}
 
 class RealtimeVoiceModeProvider with VoiceModeContract {
   final void Function(ChatStatus) _setStatus;
@@ -32,24 +106,26 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     required this.onError,
   }) : _setStatus = setStatus;
 
-  /// Reference to the audio recorder used to record the user voice.
+  // Reference to the audio recorder used to record the user voice.
   final recorder = VitAudioRecorder();
 
-  /// Class that handles the api calls to the real time api.
+  // Class that handles the api calls to the real time api.
   RealtimeModel? realtimeModel;
 
-  /// Helper variable for [isInVoiceMode].
+  // Helper variable for [isInVoiceMode].
   bool _isVoiceMode = false;
 
-  /// Reference to AI speech player.
-  ///
-  /// Necessary to dispose of the underline player.
+  // Reference to AI speech player.
   AudioSource? currentSound;
 
   final _audioVolumeStreamController = StreamController<double>();
 
-  /// Helper variable to prevent unnecessary calls to [setStatus].
+  // Helper variable to prevent unnecessary calls to [setStatus].
   ChatStatus? _oldStatus;
+
+  // Isolate communication
+  SendPort? _soLoudSendPort;
+  Isolate? _soLoudIsolate;
 
   @override
   Stream<double>? get audioVolumeStream => _audioVolumeStreamController.stream;
@@ -57,16 +133,26 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   @override
   bool get isInVoiceMode => _isVoiceMode;
 
+  Future<void> _startSoLoudIsolate() async {
+    final receivePort = ReceivePort();
+    _soLoudIsolate = await Isolate.spawn(soLoudIsolate, receivePort.sendPort);
+    _soLoudSendPort = await receivePort.first as SendPort;
+  }
+
+  Future<void> _stopSoLoudIsolate() async {
+    if (_soLoudSendPort != null) {
+      _soLoudSendPort!.send(DisposeSoLoud());
+    }
+    _soLoudIsolate?.kill(priority: Isolate.immediate);
+    _soLoudIsolate = null;
+    _soLoudSendPort = null;
+  }
+
   @override
   Future<RealtimeModel> startVoiceMode() async {
     _logger.info('Starting voice mode');
     realtimeModel?.close();
-
-    if (!SoLoud.instance.isInitialized) {
-      await SoLoud.instance.init(
-        automaticCleanup: true,
-      );
-    }
+    await _startSoLoudIsolate();
 
     var rep = createRealtimeRepository();
     realtimeModel = rep;
@@ -88,17 +174,15 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     rep.onAiAudio.listen((Uint8List bytes) {
       setStatus(ChatStatus.speaking);
-      if (currentSound != null) {
-        SoLoud.instance.addAudioDataStream(currentSound!, bytes);
+      if (_soLoudSendPort != null) {
+        _soLoudSendPort!.send(PlayAudioData(bytes));
       }
     });
 
     rep.onRawAiAudio.listen((String base64Data) async {
       setStatus(ChatStatus.speaking);
-
-      var bytes = await compute(decodeBase64, base64Data);
-      if (currentSound != null) {
-        SoLoud.instance.addAudioDataStream(currentSound!, bytes);
+      if (_soLoudSendPort != null) {
+        _soLoudSendPort!.send(PlayBase64AudioData(base64Data));
       }
     });
 
@@ -121,9 +205,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     });
 
     _isVoiceMode = true;
-
-    // Preventing turning off the screen while the user is interacting using
-    // voice.
+    // Preventing turning off the screen while the user is interacting using voice.
     WakelockPlus.enable();
 
     return rep;
@@ -152,6 +234,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     // Allow the screen to turn off again.
     await WakelockPlus.disable();
+    await _stopSoLoudIsolate();
   }
 
   @override
@@ -170,9 +253,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   @override
   Future<void> dispose() async {
     try {
-      SoLoud.instance.disposeAllSources();
-    } on Exception catch (e) {
-      _logger.error('Error disposing all sources: $e');
+      await _stopSoLoudIsolate();
+    } catch (e) {
+      _logger.error('Error disposing SoLoud isolate: $e');
     }
 
     var isRecording = await recorder.isRecording();
@@ -199,24 +282,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   void _setNewStreamPlayer() {
-    try {
-      if (currentSound != null) {
-        SoLoud.instance.setDataIsEnded(currentSound!);
-        SoLoud.instance.disposeSource(currentSound!);
-      }
-    } on Exception catch (e) {
-      _logger.error('Error disposing current playing sound: $e');
+    if (_soLoudSendPort != null) {
+      _soLoudSendPort!.send(ResetStreamPlayer());
     }
-
-    currentSound = SoLoud.instance.setBufferStream(
-      maxBufferSizeDuration: const Duration(minutes: 10),
-      bufferingTimeNeeds: 1,
-      sampleRate: 24000,
-      channels: Channels.mono,
-      format: BufferType.s16le,
-      bufferingType: BufferingType.released,
-    );
-
-    SoLoud.instance.play(currentSound!);
   }
 }
