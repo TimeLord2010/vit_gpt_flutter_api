@@ -32,9 +32,6 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     required this.onError,
   }) : _setStatus = setStatus;
 
-  /// Audio player handler.
-  final soloud = SoLoud.instance;
-
   /// Reference to the audio recorder used to record the user voice.
   final recorder = VitAudioRecorder();
 
@@ -65,8 +62,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     _logger.info('Starting voice mode');
     realtimeModel?.close();
 
-    if (!soloud.isInitialized) {
-      await soloud.init();
+    if (!SoLoud.instance.isInitialized) {
+      await SoLoud.instance.init(
+        automaticCleanup: true,
+      );
     }
 
     var rep = createRealtimeRepository();
@@ -90,7 +89,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.onAiAudio.listen((Uint8List bytes) {
       setStatus(ChatStatus.speaking);
       if (currentSound != null) {
-        soloud.addAudioDataStream(currentSound!, bytes);
+        SoLoud.instance.addAudioDataStream(currentSound!, bytes);
       }
     });
 
@@ -211,7 +210,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     currentSound = SoLoud.instance.setBufferStream(
       maxBufferSizeDuration: const Duration(minutes: 10),
-      bufferingTimeNeeds: 0.5,
+      bufferingTimeNeeds: 1,
       sampleRate: 24000,
       channels: Channels.mono,
       format: BufferType.s16le,
