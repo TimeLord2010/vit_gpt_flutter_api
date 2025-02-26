@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_soloud/flutter_soloud.dart';
@@ -7,6 +7,7 @@ import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
+import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 import 'package:vit_logger/vit_logger.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -73,7 +74,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       SoLoud.instance.setDataIsEnded(currentSound!);
     }
 
-    var source = currentSound = SoLoud.instance.setBufferStream(
+    AudioSource source = currentSound = SoLoud.instance.setBufferStream(
       maxBufferSizeDuration: const Duration(minutes: 10),
       bufferingTimeNeeds: 0.5,
       sampleRate: 24000,
@@ -96,9 +97,16 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     });
 
     rep.onAiAudio.listen((Uint8List bytes) {
-      _logger.debug('Received audio from AI');
       setStatus(ChatStatus.speaking);
       soloud.addAudioDataStream(source, bytes);
+    });
+
+    rep.onRawAiAudio.listen((String base64Data) {
+      setStatus(ChatStatus.speaking);
+
+      // TODO: Perform the code bellow in a isolate (decode and addAudioData).
+      var bytes = base64Decode(base64Data);
+      SoLoud.instance.addAudioDataStream(source, bytes);
     });
 
     rep.onConnectionOpen.listen((_) {
@@ -123,24 +131,13 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     return rep;
   }
 
-  double _calculatePcm16Volume(Uint8List bytes) {
-    var samples = bytes.buffer.asInt16List();
-    var sum = 0.0;
-    for (var sample in samples) {
-      sum += (sample * sample);
-    }
-    var rms = sqrt(sum / samples.length);
-    // Convert to range 0-1, assuming 16-bit audio (-32768 to 32767)
-    return rms / 32768;
-  }
-
   Future<void> _startRecording() async {
     setStatus(ChatStatus.listeningToUser);
     Stream<Uint8List> userAudioStream = await recorder.startStream();
 
     userAudioStream.listen((bytes) {
       realtimeModel?.sendUserAudio(bytes);
-      var volume = _calculatePcm16Volume(bytes);
+      var volume = getAudioIntensityFromPcm16(bytes);
       _audioVolumeStreamController.add(volume);
     });
   }
@@ -170,6 +167,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     var isRecording = await recorder.isRecording();
     if (isRecording) recorder.stop();
+
+    _audioVolumeStreamController.close();
   }
 
   @override
