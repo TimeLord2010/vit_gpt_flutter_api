@@ -20,7 +20,9 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
   @override
   Future<void> play() async {
     if (!player.isInitialized) {
-      await player.init();
+      await player.init(
+        automaticCleanup: true,
+      );
     }
 
     if (isAsset) {

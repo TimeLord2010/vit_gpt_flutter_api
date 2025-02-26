@@ -1,3 +1,8 @@
+## 1.5.0
+
+- Feat: Audio player now has "useLegacyAudioPlayer".
+- Fix: `SoLoudAudioPlayer` now cleansup the temporary directory.
+
 ## 1.4.4
 
 - Fix: Audio player "play".
