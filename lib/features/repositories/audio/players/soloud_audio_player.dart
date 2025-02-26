@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart' as api;
+import 'package:vit_gpt_flutter_api/factories/logger.dart';
 
 class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
   final String path;
@@ -11,6 +14,7 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
     this.isAsset = false,
   });
 
+  AudioSource? source;
   SoundHandle? soundHandle;
 
   @override
@@ -19,25 +23,47 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
       await player.init();
     }
 
-    AudioSource source;
     if (isAsset) {
       source = await player.loadAsset(path);
     } else {
       source = await player.loadFile(path);
     }
 
-    soundHandle = await player.play(source);
+    var duration = player.getLength(source!);
+
+    soundHandle = await player.play(source!);
+
+    var completer = Completer();
+
+    Timer.periodic(Duration(milliseconds: 100), (t) {
+      try {
+        var position = player.getPosition(soundHandle!);
+        if (position >= duration || player.getPause(soundHandle!)) {
+          t.cancel();
+          completer.complete();
+        }
+      } on Exception catch (e) {
+        logger.error('Error in play: $e');
+        t.cancel();
+        completer.completeError(e);
+      }
+    });
+
+    return completer.future;
   }
 
   @override
   Future<void> stop() async {
-    soundHandle = null;
     await dispose();
   }
 
   @override
   Future<void> dispose() async {
-    await player.disposeAllSources();
+    if (source != null) {
+      await player.disposeSource(source!);
+    }
+    source = null;
+    soundHandle = null;
   }
 
   @override

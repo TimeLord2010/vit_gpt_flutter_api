@@ -1,3 +1,7 @@
+## 1.4.3
+
+- Fix: Audio player "play" only finishes its future when the audio finished playing.
+
 ## 1.4.2
 
 - Fix: Stopping voie interaction will also prevent further audio data from being sent by the server.
