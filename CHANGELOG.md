@@ -1,3 +1,7 @@
+## 1.5.2
+
+- Fix: fixed isolate binary transport.
+
 ## 1.5.1
 
 - Feat: `RealtimeVoiceModeProvider` use isolate extensively.

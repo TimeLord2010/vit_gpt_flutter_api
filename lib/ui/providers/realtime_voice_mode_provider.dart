@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
-import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
@@ -41,6 +41,8 @@ class DisposeCurrentSound extends SoLoudMessage {}
 
 // Isolate entry function
 void soLoudIsolate(SendPort sendPort) async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   // Initialize SoLoud
   await SoLoud.instance.init(automaticCleanup: true);
 
@@ -134,6 +136,11 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   bool get isInVoiceMode => _isVoiceMode;
 
   Future<void> _startSoLoudIsolate() async {
+    var rootIsolateToken = ServicesBinding.rootIsolateToken;
+    if (rootIsolateToken != null) {
+      BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+    }
+
     final receivePort = ReceivePort();
     _soLoudIsolate = await Isolate.spawn(soLoudIsolate, receivePort.sendPort);
     _soLoudSendPort = await receivePort.first as SendPort;
