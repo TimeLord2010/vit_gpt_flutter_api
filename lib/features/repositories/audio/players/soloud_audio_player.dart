@@ -38,7 +38,7 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
     Timer.periodic(Duration(milliseconds: 100), (t) {
       try {
         var position = player.getPosition(soundHandle!);
-        if (position >= duration || player.getPause(soundHandle!)) {
+        if (position >= duration || position == Duration.zero) {
           t.cancel();
           completer.complete();
         }

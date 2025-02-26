@@ -1,3 +1,7 @@
+## 1.4.4
+
+- Fix: Audio player "play".
+
 ## 1.4.3
 
 - Fix: Audio player "play" only finishes its future when the audio finished playing.
