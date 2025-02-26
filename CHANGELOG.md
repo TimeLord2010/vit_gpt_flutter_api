@@ -1,3 +1,7 @@
+## 1.4.2
+
+- Fix: Stopping voie interaction will also prevent further audio data from being sent by the server.
+
 ## 1.4.1
 
 - Fix: Stopping voice mode in `RealtimeVoiceModeProvider` now stops the AI speech.

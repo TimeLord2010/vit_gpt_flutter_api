@@ -93,6 +93,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
         soloud.addAudioDataStream(currentSound!, bytes);
       }
     });
+
     rep.onRawAiAudio.listen((String base64Data) async {
       setStatus(ChatStatus.speaking);
 
@@ -100,6 +101,11 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       if (currentSound != null) {
         SoLoud.instance.addAudioDataStream(currentSound!, bytes);
       }
+    });
+
+    rep.onAiSpeechEnd.listen((_) {
+      _setNewStreamPlayer();
+      setStatus(ChatStatus.listeningToUser);
     });
 
     rep.onConnectionOpen.listen((_) {
@@ -156,8 +162,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       return;
     }
     if (rep.isAiSpeaking) {
-      // TODO: Stop AI speaking.
-      _setNewStreamPlayer();
+      rep.stopAiSpeech();
     } else {
       rep.commitUserAudio();
     }
