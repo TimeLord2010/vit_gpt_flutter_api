@@ -1,3 +1,8 @@
+## 1.4.1
+
+- Fix: Stopping voice mode in `RealtimeVoiceModeProvider` now stops the AI speech.
+- Fix: Stopping voice interaction also stops the AI from speaking.
+
 ## 1.4.0
 
 - Feat: `RealtimeVoiceModeProvider` spawns an isolate to decode the base64 data.

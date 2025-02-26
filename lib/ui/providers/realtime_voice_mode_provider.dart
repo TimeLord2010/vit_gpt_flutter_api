@@ -73,20 +73,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     realtimeModel = rep;
     rep.open();
 
-    if (currentSound != null) {
-      SoLoud.instance.setDataIsEnded(currentSound!);
-    }
+    _setNewStreamPlayer();
 
-    AudioSource source = currentSound = SoLoud.instance.setBufferStream(
-      maxBufferSizeDuration: const Duration(minutes: 10),
-      bufferingTimeNeeds: 0.5,
-      sampleRate: 24000,
-      channels: Channels.mono,
-      format: BufferType.s16le,
-      bufferingType: BufferingType.released,
-    );
-
-    SoLoud.instance.play(source);
     rep.onUserText.listen((text) {
       _logger.debug('Received text from user');
       setStatus(ChatStatus.transcribing);
@@ -101,13 +89,17 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     rep.onAiAudio.listen((Uint8List bytes) {
       setStatus(ChatStatus.speaking);
-      soloud.addAudioDataStream(source, bytes);
+      if (currentSound != null) {
+        soloud.addAudioDataStream(currentSound!, bytes);
+      }
     });
     rep.onRawAiAudio.listen((String base64Data) async {
       setStatus(ChatStatus.speaking);
 
       var bytes = await compute(decodeBase64, base64Data);
-      SoLoud.instance.addAudioDataStream(source, bytes);
+      if (currentSound != null) {
+        SoLoud.instance.addAudioDataStream(currentSound!, bytes);
+      }
     });
 
     rep.onConnectionOpen.listen((_) {
@@ -148,6 +140,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     realtimeModel?.close();
     realtimeModel = null;
 
+    _setNewStreamPlayer();
+
     _isVoiceMode = false;
     setStatus(ChatStatus.idle);
 
@@ -157,13 +151,24 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   void stopVoiceInteraction() {
-    realtimeModel?.commitUserAudio();
+    var rep = realtimeModel;
+    if (rep == null) {
+      return;
+    }
+    if (rep.isAiSpeaking) {
+      // TODO: Stop AI speaking.
+      _setNewStreamPlayer();
+    } else {
+      rep.commitUserAudio();
+    }
   }
 
   @override
   Future<void> dispose() async {
-    if (currentSound != null) {
-      SoLoud.instance.setDataIsEnded(currentSound!);
+    try {
+      SoLoud.instance.disposeAllSources();
+    } on Exception catch (e) {
+      _logger.error('Error disposing all sources: $e');
     }
 
     var isRecording = await recorder.isRecording();
@@ -187,5 +192,27 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     _oldStatus = status;
     _setStatus(status);
+  }
+
+  void _setNewStreamPlayer() {
+    try {
+      if (currentSound != null) {
+        SoLoud.instance.setDataIsEnded(currentSound!);
+        SoLoud.instance.disposeSource(currentSound!);
+      }
+    } on Exception catch (e) {
+      _logger.error('Error disposing current playing sound: $e');
+    }
+
+    currentSound = SoLoud.instance.setBufferStream(
+      maxBufferSizeDuration: const Duration(minutes: 10),
+      bufferingTimeNeeds: 0.5,
+      sampleRate: 24000,
+      channels: Channels.mono,
+      format: BufferType.s16le,
+      bufferingType: BufferingType.released,
+    );
+
+    SoLoud.instance.play(currentSound!);
   }
 }
