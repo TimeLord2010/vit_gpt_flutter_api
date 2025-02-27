@@ -1,3 +1,7 @@
+## 1.5.4
+
+- Refac: Isolate handling.
+
 ## 1.5.3
 
 - Refac: Isolate handling.

@@ -48,7 +48,7 @@ Future<(Isolate, SendPort)> computeIsolate() async {
       answerPort: receivePort.sendPort,
     ),
   );
-  return (isolate, receivePort.first as SendPort);
+  return (isolate, (await receivePort.first) as SendPort);
 }
 
 void _isolateEntry(_IsolateData isolateData) async {
