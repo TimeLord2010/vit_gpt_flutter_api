@@ -13,8 +13,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_soloud: ^3.0.0
+  flutter_sound: ^9.23.1
   get_it: ^8.0.2
   just_audio: ^0.9.42
+  logger: ^2.5.0
   path_provider: ^2.1.5
   record: ^5.2.0
   shared_preferences: ^2.3.3
