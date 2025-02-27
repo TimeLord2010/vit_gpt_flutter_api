@@ -1,1 +1,1 @@
-library vit_gpt_flutter_api;
+library;

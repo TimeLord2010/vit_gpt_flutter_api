@@ -1,3 +1,8 @@
+## 1.6.0
+
+- Feat: `VitGptFlutterConfiguration` not includes realtimeAudioPlayer factory method to customize
+the player used in the `RealtimeVoiceModeProvider`.
+
 ## 1.5.6
 
 - Build: updated dependencies.

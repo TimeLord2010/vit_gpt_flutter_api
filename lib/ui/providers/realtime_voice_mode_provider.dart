@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
@@ -7,6 +6,7 @@ import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
+import 'package:vit_gpt_flutter_api/factories/create_realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
@@ -17,26 +17,19 @@ var _logger = TerminalLogger(
   event: 'RealtimeVoiceModeProvider',
 );
 
-// Message classes for communication with the isolate
-abstract class SoLoudMessage {}
-
-class InitializeSoLoud extends SoLoudMessage {}
-
-class PlayAudioData extends SoLoudMessage {
+class _PlayAudioData {
   final Uint8List audioData;
-  PlayAudioData(this.audioData);
+  _PlayAudioData(this.audioData);
 }
 
-class PlayBase64AudioData extends SoLoudMessage {
+class _PlayBase64AudioData {
   final String base64Data;
-  PlayBase64AudioData(this.base64Data);
+  _PlayBase64AudioData(this.base64Data);
 }
 
-class ResetStreamPlayer extends SoLoudMessage {}
+class _ResetStreamPlayer {}
 
-class DisposeSoLoud extends SoLoudMessage {}
-
-class DisposeCurrentSound extends SoLoudMessage {}
+class _DisposeRealtime {}
 
 Future<(Isolate, SendPort)> computeIsolate() async {
   final receivePort = ReceivePort();
@@ -68,10 +61,7 @@ class _IsolateData {
 
 // Isolate entry function
 void soLoudIsolate(SendPort sendPort) async {
-  // Initialize SoLoud
-  await SoLoud.instance.init(automaticCleanup: true);
-
-  AudioSource? currentSound;
+  var realtimePlayer = createRealtimeAudioPlayer();
 
   // Create a ReceivePort to receive messages from main isolate
   final receivePort = ReceivePort();
@@ -79,56 +69,18 @@ void soLoudIsolate(SendPort sendPort) async {
   // Send back the SendPort to the main isolate
   sendPort.send(receivePort.sendPort);
 
-  // var bufferHandler = BufferedDataHandler((data) {
-  //   Uint8List bytes = base64Decode(data);
-  //   if (currentSound != null) {
-  //     SoLoud.instance.addAudioDataStream(currentSound, bytes);
-  //   }
-  // });
-
   // Listen for messages
-  try {
-    await for (var msg in receivePort) {
-      if (msg is SoLoudMessage) {
-        if (msg is PlayAudioData) {
-          if (currentSound != null) {
-            SoLoud.instance.addAudioDataStream(currentSound, msg.audioData);
-          }
-        } else if (msg is PlayBase64AudioData) {
-          //bufferHandler.addData(msg.base64Data);
-          Uint8List bytes = base64Decode(msg.base64Data);
-          if (currentSound != null) {
-            SoLoud.instance.addAudioDataStream(currentSound, bytes);
-          }
-        } else if (msg is ResetStreamPlayer) {
-          // Dispose of the current sound and create a new one
-          if (currentSound != null) {
-            SoLoud.instance.setDataIsEnded(currentSound);
-            SoLoud.instance.disposeSource(currentSound);
-          }
-          currentSound = SoLoud.instance.setBufferStream(
-            maxBufferSizeDuration: const Duration(minutes: 10),
-            bufferingTimeNeeds: 2,
-            sampleRate: 24000,
-            channels: Channels.mono,
-            format: BufferType.s16le,
-            bufferingType: BufferingType.released,
-          );
-          SoLoud.instance.play(currentSound);
-        } else if (msg is DisposeCurrentSound) {
-          if (currentSound != null) {
-            SoLoud.instance.setDataIsEnded(currentSound);
-            SoLoud.instance.disposeSource(currentSound);
-            currentSound = null;
-          }
-        } else if (msg is DisposeSoLoud) {
-          SoLoud.instance.disposeAllSources();
-          break;
-        }
-      }
+  await for (var msg in receivePort) {
+    if (msg is _PlayAudioData) {
+      realtimePlayer.appendBytes(msg.audioData);
+    } else if (msg is _PlayBase64AudioData) {
+      realtimePlayer.appendData(msg.base64Data);
+    } else if (msg is _ResetStreamPlayer) {
+      realtimePlayer.resetBuffer();
+    } else if (msg is _DisposeRealtime) {
+      realtimePlayer.dispose();
+      break;
     }
-  } finally {
-    // bufferHandler.dispose();
   }
 }
 
@@ -180,7 +132,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   Future<void> _stopSoLoudIsolate() async {
     if (_soLoudSendPort != null) {
-      _soLoudSendPort!.send(DisposeSoLoud());
+      _soLoudSendPort!.send(_DisposeRealtime());
     }
     _soLoudIsolate?.kill(priority: Isolate.immediate);
     _soLoudIsolate = null;
@@ -214,14 +166,14 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.onAiAudio.listen((Uint8List bytes) {
       setStatus(ChatStatus.speaking);
       if (_soLoudSendPort != null) {
-        _soLoudSendPort!.send(PlayAudioData(bytes));
+        _soLoudSendPort!.send(_PlayAudioData(bytes));
       }
     });
 
     rep.onRawAiAudio.listen((String base64Data) async {
       setStatus(ChatStatus.speaking);
       if (_soLoudSendPort != null) {
-        _soLoudSendPort!.send(PlayBase64AudioData(base64Data));
+        _soLoudSendPort!.send(_PlayBase64AudioData(base64Data));
       }
     });
 
@@ -322,7 +274,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   void _setNewStreamPlayer() {
     if (_soLoudSendPort != null) {
-      _soLoudSendPort!.send(ResetStreamPlayer());
+      _soLoudSendPort!.send(_ResetStreamPlayer());
     }
   }
 }
