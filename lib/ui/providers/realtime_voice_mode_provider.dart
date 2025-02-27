@@ -8,6 +8,7 @@ import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
+import 'package:vit_gpt_flutter_api/features/repositories/buffered_data_handler.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 import 'package:vit_logger/vit_logger.dart';
@@ -79,44 +80,56 @@ void soLoudIsolate(SendPort sendPort) async {
   // Send back the SendPort to the main isolate
   sendPort.send(receivePort.sendPort);
 
+  var bufferHandler = BufferedDataHandler((data) {
+    Uint8List bytes = base64Decode(data);
+    if (currentSound != null) {
+      SoLoud.instance.addAudioDataStream(currentSound, bytes);
+    }
+  });
+
   // Listen for messages
-  await for (var msg in receivePort) {
-    if (msg is SoLoudMessage) {
-      if (msg is PlayAudioData) {
-        if (currentSound != null) {
-          SoLoud.instance.addAudioDataStream(currentSound, msg.audioData);
+  try {
+    await for (var msg in receivePort) {
+      if (msg is SoLoudMessage) {
+        if (msg is PlayAudioData) {
+          if (currentSound != null) {
+            SoLoud.instance.addAudioDataStream(currentSound, msg.audioData);
+          }
+        } else if (msg is PlayBase64AudioData) {
+          bufferHandler.addData(msg.base64Data);
+          // Uint8List bytes = base64Decode(msg.base64Data);
+          // if (currentSound != null) {
+          //   SoLoud.instance.addAudioDataStream(currentSound, bytes);
+          // }
+        } else if (msg is ResetStreamPlayer) {
+          // Dispose of the current sound and create a new one
+          if (currentSound != null) {
+            SoLoud.instance.setDataIsEnded(currentSound);
+            SoLoud.instance.disposeSource(currentSound);
+          }
+          currentSound = SoLoud.instance.setBufferStream(
+            maxBufferSizeDuration: const Duration(minutes: 10),
+            bufferingTimeNeeds: 1,
+            sampleRate: 24000,
+            channels: Channels.mono,
+            format: BufferType.s16le,
+            bufferingType: BufferingType.released,
+          );
+          SoLoud.instance.play(currentSound);
+        } else if (msg is DisposeCurrentSound) {
+          if (currentSound != null) {
+            SoLoud.instance.setDataIsEnded(currentSound);
+            SoLoud.instance.disposeSource(currentSound);
+            currentSound = null;
+          }
+        } else if (msg is DisposeSoLoud) {
+          SoLoud.instance.disposeAllSources();
+          break;
         }
-      } else if (msg is PlayBase64AudioData) {
-        Uint8List bytes = base64Decode(msg.base64Data);
-        if (currentSound != null) {
-          SoLoud.instance.addAudioDataStream(currentSound, bytes);
-        }
-      } else if (msg is ResetStreamPlayer) {
-        // Dispose of the current sound and create a new one
-        if (currentSound != null) {
-          SoLoud.instance.setDataIsEnded(currentSound);
-          SoLoud.instance.disposeSource(currentSound);
-        }
-        currentSound = SoLoud.instance.setBufferStream(
-          maxBufferSizeDuration: const Duration(minutes: 10),
-          bufferingTimeNeeds: 1,
-          sampleRate: 24000,
-          channels: Channels.mono,
-          format: BufferType.s16le,
-          bufferingType: BufferingType.released,
-        );
-        SoLoud.instance.play(currentSound);
-      } else if (msg is DisposeCurrentSound) {
-        if (currentSound != null) {
-          SoLoud.instance.setDataIsEnded(currentSound);
-          SoLoud.instance.disposeSource(currentSound);
-          currentSound = null;
-        }
-      } else if (msg is DisposeSoLoud) {
-        SoLoud.instance.disposeAllSources();
-        break;
       }
     }
+  } finally {
+    bufferHandler.dispose();
   }
 }
 
