@@ -8,7 +8,6 @@ import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
-import 'package:vit_gpt_flutter_api/features/repositories/buffered_data_handler.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 import 'package:vit_logger/vit_logger.dart';
@@ -80,12 +79,12 @@ void soLoudIsolate(SendPort sendPort) async {
   // Send back the SendPort to the main isolate
   sendPort.send(receivePort.sendPort);
 
-  var bufferHandler = BufferedDataHandler((data) {
-    Uint8List bytes = base64Decode(data);
-    if (currentSound != null) {
-      SoLoud.instance.addAudioDataStream(currentSound, bytes);
-    }
-  });
+  // var bufferHandler = BufferedDataHandler((data) {
+  //   Uint8List bytes = base64Decode(data);
+  //   if (currentSound != null) {
+  //     SoLoud.instance.addAudioDataStream(currentSound, bytes);
+  //   }
+  // });
 
   // Listen for messages
   try {
@@ -96,11 +95,11 @@ void soLoudIsolate(SendPort sendPort) async {
             SoLoud.instance.addAudioDataStream(currentSound, msg.audioData);
           }
         } else if (msg is PlayBase64AudioData) {
-          bufferHandler.addData(msg.base64Data);
-          // Uint8List bytes = base64Decode(msg.base64Data);
-          // if (currentSound != null) {
-          //   SoLoud.instance.addAudioDataStream(currentSound, bytes);
-          // }
+          //bufferHandler.addData(msg.base64Data);
+          Uint8List bytes = base64Decode(msg.base64Data);
+          if (currentSound != null) {
+            SoLoud.instance.addAudioDataStream(currentSound, bytes);
+          }
         } else if (msg is ResetStreamPlayer) {
           // Dispose of the current sound and create a new one
           if (currentSound != null) {
@@ -109,7 +108,7 @@ void soLoudIsolate(SendPort sendPort) async {
           }
           currentSound = SoLoud.instance.setBufferStream(
             maxBufferSizeDuration: const Duration(minutes: 10),
-            bufferingTimeNeeds: 1,
+            bufferingTimeNeeds: 2,
             sampleRate: 24000,
             channels: Channels.mono,
             format: BufferType.s16le,
@@ -129,7 +128,7 @@ void soLoudIsolate(SendPort sendPort) async {
       }
     }
   } finally {
-    bufferHandler.dispose();
+    // bufferHandler.dispose();
   }
 }
 

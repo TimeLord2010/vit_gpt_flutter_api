@@ -1,3 +1,7 @@
+## 1.5.6
+
+- Build: updated dependencies.
+
 ## 1.5.5
 
 - Refac: Isolate handling.
