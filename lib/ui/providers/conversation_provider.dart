@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flash/flash.dart';
 import 'package:flutter/material.dart';
 import 'package:vit_dart_extensions/vit_dart_extensions.dart';
@@ -11,7 +12,6 @@ import 'package:vit_gpt_flutter_api/ui/providers/realtime_voice_mode_provider.da
 
 import '../../data/enums/chat_status.dart';
 import '../../factories/logger.dart';
-import '../../features/repositories/debouncer.dart';
 import '../../features/usecases/get_error_message.dart';
 import 'voice_mode_provider.dart';
 
@@ -234,14 +234,6 @@ class ConversationProvider with ChangeNotifier {
       );
       var text = controller.text;
 
-      var scrollDebouncer = Debouncer(
-        delay: const Duration(milliseconds: 250),
-        action: () {
-          _scrollToBottomIfNeeded();
-          notifyListeners();
-        },
-      );
-
       // Streaming response
       controller.clear();
       await rep.prompt(
@@ -255,8 +247,14 @@ class ConversationProvider with ChangeNotifier {
           }
           if (onChunk != null) onChunk(chunk);
 
-          scrollDebouncer.execute();
-          // notifyListeners();
+          EasyThrottle.throttle(
+            'scroll',
+            Duration(milliseconds: 200),
+            () {
+              notifyListeners();
+              _scrollToBottomIfNeeded();
+            },
+          );
         },
       );
       logger.info('Finished reading response stream');
@@ -265,7 +263,7 @@ class ConversationProvider with ChangeNotifier {
     } catch (e) {
       var msg = getErrorMessage(e) ?? 'Failed to fetch response';
       logger.error(msg);
-      if (context != null) {
+      if (context != null && context.mounted) {
         await showDialog(
           context: context,
           builder: (context) {

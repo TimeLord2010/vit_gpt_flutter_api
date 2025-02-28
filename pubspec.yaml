@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   dio: ^5.7.0
+  easy_debounce: ^2.0.3
   flash: ^3.1.1
   flutter:
     sdk: flutter
