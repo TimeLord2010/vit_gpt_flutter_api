@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
@@ -42,17 +41,14 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   // Helper variable for [isInVoiceMode].
   bool _isVoiceMode = false;
 
-  // Reference to AI speech player.
-  AudioSource? currentSound;
-
   final _audioVolumeStreamController = StreamController<double>();
 
   // Helper variable to prevent unnecessary calls to [setStatus].
   ChatStatus? _oldStatus;
 
   // Isolate communication
-  SendPort? _soLoudSendPort;
-  Isolate? _soLoudIsolate;
+  SendPort? _sendPort;
+  Isolate? _isolate;
 
   @override
   Stream<double>? get audioVolumeStream => _audioVolumeStreamController.stream;
@@ -72,20 +68,24 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   Future<void> _startIsolate() async {
     var (isolate, send) = await computeIsolate();
-    _soLoudIsolate = isolate;
-    _soLoudSendPort = send;
+    _isolate = isolate;
+    _sendPort = send;
   }
 
   Future<void> _tearDownPlayer() async {
-    realtimePlayer?.dispose();
-    realtimePlayer = null;
+    try {
+      realtimePlayer?.dispose();
+      realtimePlayer = null;
 
-    if (_soLoudSendPort != null) {
-      _soLoudSendPort!.send(_DisposeRealtime());
+      if (_sendPort != null) {
+        _sendPort!.send(_DisposeRealtime());
+      }
+      _isolate?.kill(priority: Isolate.immediate);
+      _isolate = null;
+      _sendPort = null;
+    } on Exception catch (e) {
+      _logger.error('Error disposing player: $e');
     }
-    _soLoudIsolate?.kill(priority: Isolate.immediate);
-    _soLoudIsolate = null;
-    _soLoudSendPort = null;
   }
 
   @override
@@ -164,7 +164,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   void _processAiBytes(Uint8List bytes) {
     if (useIsolate) {
-      _soLoudSendPort?.send(_PlayAudioData(bytes));
+      _sendPort?.send(_PlayAudioData(bytes));
     } else {
       realtimePlayer?.appendBytes(bytes);
     }
@@ -172,7 +172,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   void _processData(String base64Data) {
     if (useIsolate) {
-      _soLoudSendPort?.send(_PlayBase64AudioData(base64Data));
+      _sendPort?.send(_PlayBase64AudioData(base64Data));
     } else {
       realtimePlayer?.appendData(base64Data);
     }
@@ -208,11 +208,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   Future<void> dispose() async {
-    try {
-      await _tearDownPlayer();
-    } catch (e) {
-      _logger.error('Error disposing SoLoud isolate: $e');
-    }
+    await _tearDownPlayer();
 
     var isRecording = await recorder.isRecording();
     if (isRecording) recorder.stop();
@@ -239,8 +235,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   void _setNewStreamPlayer() {
     if (useIsolate) {
-      if (_soLoudSendPort != null) {
-        _soLoudSendPort!.send(_ResetStreamPlayer());
+      if (_sendPort != null) {
+        _sendPort!.send(_ResetStreamPlayer());
       }
     } else {
       realtimePlayer?.resetBuffer();
@@ -277,7 +273,7 @@ Future<(Isolate, SendPort)> computeIsolate() async {
 
 void _isolateEntry(_IsolateData isolateData) async {
   BackgroundIsolateBinaryMessenger.ensureInitialized(isolateData.token);
-  soLoudIsolate(isolateData.answerPort);
+  realtimeIsolate(isolateData.answerPort);
 }
 
 class _IsolateData {
@@ -291,7 +287,8 @@ class _IsolateData {
 }
 
 // Isolate entry function
-void soLoudIsolate(SendPort sendPort) async {
+void realtimeIsolate(SendPort sendPort) async {
+  // TODO: Fix static values are not transfered to isolate
   RealtimeAudioPlayer realtimePlayer = createRealtimeAudioPlayer();
 
   // Create a ReceivePort to receive messages from main isolate
