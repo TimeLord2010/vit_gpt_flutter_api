@@ -23,8 +23,8 @@ class BufferedDataHandler {
 
   /// Creates a [BufferedDataHandler] that handles the data buffering and delayed processing.
   ///
-  /// @param addDataFunction Function to handle data adding.
-  /// @param interval Time interval in milliseconds for transmitting buffered data.
+  /// [_addDataFunction] Function to handle data adding.
+  /// [interval] Time interval in milliseconds for transmitting buffered data.
   BufferedDataHandler(
     this._addDataFunction, {
     int interval = 1000,
