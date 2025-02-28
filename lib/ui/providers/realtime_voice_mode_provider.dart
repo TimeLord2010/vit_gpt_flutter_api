@@ -22,6 +22,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final void Function(String text) addUserText;
   final void Function(String text) addAiText;
   final void Function(String errorMessage) onError;
+  final Future<void> Function() onStart;
   final bool useIsolate;
 
   RealtimeVoiceModeProvider({
@@ -29,6 +30,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     required this.addUserText,
     required this.addAiText,
     required this.onError,
+    required this.onStart,
     this.useIsolate = false,
   }) : _setStatus = setStatus;
 
@@ -41,7 +43,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   // Helper variable for [isInVoiceMode].
   bool _isVoiceMode = false;
 
-  final _audioVolumeStreamController = StreamController<double>();
+  final _audioVolumeStreamController = StreamController<double>.broadcast();
 
   // Helper variable to prevent unnecessary calls to [setStatus].
   ChatStatus? _oldStatus;
@@ -97,18 +99,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     realtimeModel = rep;
     rep.open();
 
-    await setupPlayer();
+    await Future.wait([
+      onStart(),
+      setupPlayer(),
+    ]);
 
     _setNewStreamPlayer();
 
     rep.onUserText.listen((text) {
-      _logger.debug('Received text from user');
       setStatus(ChatStatus.transcribing);
       addUserText(text);
     });
 
     rep.onAiText.listen((text) {
-      _logger.debug('Received text from AI');
       setStatus(ChatStatus.answering);
       addAiText(text);
     });

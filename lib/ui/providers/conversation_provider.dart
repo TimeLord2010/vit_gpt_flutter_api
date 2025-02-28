@@ -344,12 +344,15 @@ class ConversationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateVoiceMode(bool useRealtime) {
+  void updateVoiceMode(bool useRealtimeApi) {
     voiceModeProvider.stopVoiceMode();
     voiceModeProvider.dispose();
 
-    if (useRealtime) {
+    if (useRealtimeApi) {
       var p = RealtimeVoiceModeProvider(
+        onStart: () async {
+          await _createConversationIfNecessary();
+        },
         setStatus: (status) {
           this.status = status;
           notifyListeners();
