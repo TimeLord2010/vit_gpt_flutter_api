@@ -7,63 +7,13 @@ import 'package:logger/logger.dart' show Level;
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/buffered_data_handler.dart';
 
-// class VitSoLoudRealtimePlayer with RealtimeAudioPlayer {
-//   VitSoLoudRealtimePlayer() {
-//     SoLoud.instance
-//         .init(
-//       automaticCleanup: true,
-//     )
-//         .then((_) {
-//       _ready = true;
-//     });
-//   }
-
-//   bool _ready = false;
-//   AudioSource? _audioSource;
-
-//   @override
-//   void appendBytes(Uint8List audioData) {
-//     var ref = _audioSource;
-//     if (ref == null) return;
-//     SoLoud.instance.addAudioDataStream(ref, audioData);
-//   }
-
-//   @override
-//   Future<void> createBufferStream() async {
-//     disposeBufferStream();
-
-//     while (!_ready) {
-//       await Future.delayed(const Duration(milliseconds: 50));
-//     }
-
-//     var ref = _audioSource = SoLoud.instance.setBufferStream(
-//       maxBufferSizeDuration: const Duration(minutes: 10),
-//       bufferingTimeNeeds: 2,
-//       sampleRate: 24000,
-//       channels: Channels.mono,
-//       format: BufferType.s16le,
-//       bufferingType: BufferingType.released,
-//     );
-//     await SoLoud.instance.play(ref);
-//   }
-
-//   @override
-//   void dispose() {
-//     SoLoud.instance.disposeAllSources();
-//     _audioSource = null;
-//   }
-
-//   @override
-//   void disposeBufferStream() {
-//     var ref = _audioSource;
-//     if (ref != null) {
-//       SoLoud.instance.setDataIsEnded(ref);
-//       SoLoud.instance.disposeSource(ref);
-//     }
-//   }
-// }
-
+/// A audio player that plays audio in realtime by receiving Uint8List data or
+/// base64 encoded strings.
 class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
+  /// The player instance.
+  ///
+  /// If we don't disable the log level, we will see a lot of logs in the
+  /// console by default.
   final _player = FlutterSoundPlayer(
     logLevel: Level.off,
   );
@@ -72,6 +22,12 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     unawaited(_setup());
   }
 
+  /// Controls the cadence of data being sent to the player.
+  ///
+  /// If we don't control the cadence of data being sent to the player,
+  /// the player will cut off parts of the audio.
+  /// This was observed using "flutter_sound" on version 9.23.1 when running
+  /// on IOS. If this is no longer true in the future, we can remove this.
   late final _bufferHandler = BufferedDataHandler((base64) {
     var bytes = base64Decode(base64);
     appendBytes(bytes);
@@ -83,19 +39,45 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
   @override
   Future<void> appendBytes(Uint8List audioData) async {
+    // We are not worried here about the player not being open YET (see
+    //[appendData] explanation). But that the player was disposed.
+    if (!_player.isOpen()) {
+      return;
+    }
+
+    // A better implementation would buffer the data here instead of the base64
+    // string (a new buffer class is required).
+    // But this works since the current implementation sends the data only in
+    // string format.
+
     await _player.feedUint8FromStream(audioData);
   }
 
   @override
   void appendData(String base64Data) {
+    // Technically, this method could be called before the player is open or
+    // the buffer stream is created. But we don't want to wait for any of
+    // these to be ready before we start receiving data because the current
+    // usecase is the realtime feature of the app, and the way it works is: we
+    // first need to wait for the user to speak and then we start receiving
+    // data. By that time, the player and stream should be ready.
     _bufferHandler.addData(base64Data);
   }
 
   @override
   Future<void> createBufferStream() async {
+    // Since we are not waiting for the [_setup] to complete, we need to wait
+    // for the player to be open before creating the buffer stream.
     while (!_player.isOpen()) {
       await Future.delayed(const Duration(milliseconds: 100));
     }
+
+    // The player was made to work with open ai's realtime API, which only
+    // supports PCM16 codec, mono audio, and 24000 sample rate.
+    //
+    // If you change the settings, make sure to make it customizable in the
+    // [RealtimeAudioPlayer] interface or [VitRealtimeAudioPlayer] constructor
+    // so it still works with open ai's realtime API.
     await _player.startPlayerFromStream(
       codec: Codec.pcm16,
       numChannels: 1,
@@ -106,14 +88,15 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
   @override
   Future<void> disposeBufferStream() async {
+    // [stopPlayer] will complain in the logs if the player is not open.
     var isOpen = _player.isOpen();
     if (!isOpen) return;
+
     await _player.stopPlayer();
   }
 
   @override
   Future<void> dispose() async {
-    await _player.stopPlayer();
     await _player.closePlayer();
   }
 }
