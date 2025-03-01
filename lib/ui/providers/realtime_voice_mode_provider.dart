@@ -106,32 +106,37 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     _setNewStreamPlayer();
 
-    rep.onUserText.listen((text) {
-      setStatus(ChatStatus.transcribing);
-      addUserText(text);
+    rep.onTranscription.listen((transcription) {
+      var role = transcription.role;
+      if (role == Role.user) {
+        setStatus(ChatStatus.transcribing);
+        addUserText(transcription.text);
+      } else if (role == Role.assistant) {
+        setStatus(ChatStatus.answering);
+        addAiText(transcription.text);
+      }
     });
 
-    rep.onAiText.listen((text) {
-      setStatus(ChatStatus.answering);
-      addAiText(text);
+    rep.onSpeech.listen((speech) {
+      if (speech.role == Role.assistant) {
+        setStatus(ChatStatus.speaking);
+        _processAiBytes(speech.bytes);
+      }
     });
 
-    rep.onAiAudio.listen((Uint8List bytes) {
-      setStatus(ChatStatus.speaking);
-      _processAiBytes(bytes);
+    rep.onSpeechStart.listen((speechStart) {
+      var role = speechStart.role;
+      if (role == Role.assistant) {
+        _setNewStreamPlayer();
+      }
     });
 
-    rep.onRawAiAudio.listen((String base64Data) async {
-      setStatus(ChatStatus.speaking);
-      _processData(base64Data);
-    });
-
-    rep.onAiSpeechBegin.listen((_) {
-      _setNewStreamPlayer();
-    });
-
-    rep.onAiSpeechEnd.listen((_) {
-      setStatus(ChatStatus.listeningToUser);
+    rep.onSpeechEnd.listen((speechEnd) {
+      var role = speechEnd.role;
+      if (role == Role.assistant) {
+        // TODO: Just because the stream of audio ended, it doesn't mean that the assistant finished speaking.
+        setStatus(ChatStatus.listeningToUser);
+      }
     });
 
     rep.onConnectionOpen.listen((_) {
@@ -170,14 +175,6 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       _sendPort?.send(_PlayAudioData(bytes));
     } else {
       realtimePlayer?.appendBytes(bytes);
-    }
-  }
-
-  void _processData(String base64Data) {
-    if (useIsolate) {
-      _sendPort?.send(_PlayBase64AudioData(base64Data));
-    } else {
-      realtimePlayer?.appendData(base64Data);
     }
   }
 
@@ -252,10 +249,10 @@ class _PlayAudioData {
   _PlayAudioData(this.audioData);
 }
 
-class _PlayBase64AudioData {
-  final String base64Data;
-  _PlayBase64AudioData(this.base64Data);
-}
+// class _PlayBase64AudioData {
+//   final String base64Data;
+//   _PlayBase64AudioData(this.base64Data);
+// }
 
 class _ResetStreamPlayer {}
 
@@ -304,8 +301,6 @@ void realtimeIsolate(SendPort sendPort) async {
   await for (var msg in receivePort) {
     if (msg is _PlayAudioData) {
       realtimePlayer.appendBytes(msg.audioData);
-    } else if (msg is _PlayBase64AudioData) {
-      realtimePlayer.appendData(msg.base64Data);
     } else if (msg is _ResetStreamPlayer) {
       realtimePlayer.resetBuffer();
     } else if (msg is _DisposeRealtime) {

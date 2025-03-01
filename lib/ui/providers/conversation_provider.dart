@@ -360,7 +360,7 @@ class ConversationProvider with ChangeNotifier {
         addUserText: (text) {
           var lastMessage = messages.lastOrNull;
 
-          if (lastMessage == null || lastMessage.sender != SenderType.user) {
+          if (lastMessage == null || lastMessage.role != Role.user) {
             messages.add(Message.user(
               message: text,
             ));
@@ -374,7 +374,7 @@ class ConversationProvider with ChangeNotifier {
         addAiText: (text) {
           var lastMsg = messages.lastOrNull;
 
-          if (lastMsg == null || lastMsg.sender != SenderType.assistant) {
+          if (lastMsg == null || lastMsg.role != Role.assistant) {
             messages.add(Message.assistant(
               message: text,
             ));
