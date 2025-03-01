@@ -340,9 +340,7 @@ class ConversationProvider with ChangeNotifier {
     }
   }
 
-  void updateUI() {
-    notifyListeners();
-  }
+  void updateUI() => notifyListeners();
 
   void updateVoiceMode(bool useRealtimeApi) {
     voiceModeProvider.stopVoiceMode();
@@ -357,33 +355,47 @@ class ConversationProvider with ChangeNotifier {
           this.status = status;
           notifyListeners();
         },
-        addUserText: (text) {
-          var lastMessage = messages.lastOrNull;
-
-          if (lastMessage == null || lastMessage.role != Role.user) {
-            messages.add(Message.user(
-              message: text,
-            ));
-            notifyListeners();
-            return;
-          }
-
-          lastMessage.text += text;
+        onTranscriptionStart: (transcriptionStart) {
+          messages.add(Message(
+            date: DateTime.now(),
+            role: transcriptionStart.role,
+            text: '',
+            id: transcriptionStart.id,
+          ));
           notifyListeners();
         },
-        addAiText: (text) {
-          var lastMsg = messages.lastOrNull;
-
-          if (lastMsg == null || lastMsg.role != Role.assistant) {
-            messages.add(Message.assistant(
-              message: text,
-            ));
-            notifyListeners();
+        onTranscription: (transcriptionItem) {
+          var messages = this.messages;
+          if (messages.isEmpty) {
+            logger.warn(
+                'Unable to update message with text transcription: No messages found');
             return;
           }
 
-          lastMsg.text += text;
-          notifyListeners();
+          // Attempting to find the message with the same id
+          Message? message;
+          for (int i = messages.length - 1; i >= 0; i--) {
+            var m = messages[i];
+            if (m.id == transcriptionItem.id &&
+                m.role == transcriptionItem.role) {
+              message = m;
+              break;
+            }
+          }
+
+          if (message == null) {
+            logger.warn(
+                'Unable to update message with text transcription: No message found with id ${transcriptionItem.id}');
+            return;
+          }
+
+          message.text = transcriptionItem.text;
+
+          EasyThrottle.throttle(
+            'updateUI:transcription',
+            Duration(milliseconds: 200),
+            () => notifyListeners(),
+          );
         },
         onError: (errorMessage) {
           _showError(

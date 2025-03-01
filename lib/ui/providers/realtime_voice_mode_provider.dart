@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
+import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_item.dart';
+import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_start.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
@@ -19,16 +21,27 @@ var _logger = TerminalLogger(
 
 class RealtimeVoiceModeProvider with VoiceModeContract {
   final void Function(ChatStatus) _setStatus;
-  final void Function(String text) addUserText;
-  final void Function(String text) addAiText;
-  final void Function(String errorMessage) onError;
+
+  /// Called once the voice mode was started by the user.
   final Future<void> Function() onStart;
+
+  /// Called when a transcription starts. Either from the user or the assistant.
+  final void Function(TranscriptionStart transcriptionStart)
+      onTranscriptionStart;
+
+  /// Called when a transcription data is received.
+  final void Function(TranscriptionItem transcriptionItem) onTranscription;
+
+  /// Called when any error happens. Useful to update the UI.
+  final void Function(String errorMessage) onError;
+
+  /// Whether the audio data should be processed in an isolate or not.
   final bool useIsolate;
 
   RealtimeVoiceModeProvider({
     required void Function(ChatStatus status) setStatus,
-    required this.addUserText,
-    required this.addAiText,
+    required this.onTranscriptionStart,
+    required this.onTranscription,
     required this.onError,
     required this.onStart,
     this.useIsolate = false,
@@ -106,15 +119,18 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     _setNewStreamPlayer();
 
+    rep.onTranscriptionStart.listen((transcriptionStart) {
+      onTranscriptionStart(transcriptionStart);
+    });
+
     rep.onTranscription.listen((transcription) {
-      var role = transcription.role;
-      if (role == Role.user) {
-        setStatus(ChatStatus.transcribing);
-        addUserText(transcription.text);
-      } else if (role == Role.assistant) {
-        setStatus(ChatStatus.answering);
-        addAiText(transcription.text);
-      }
+      // var role = transcription.role;
+      // if (role == Role.user) {
+      //   setStatus(ChatStatus.transcribing);
+      // } else if (role == Role.assistant) {
+      //   setStatus(ChatStatus.answering);
+      // }
+      onTranscription(transcription);
     });
 
     rep.onSpeech.listen((speech) {
