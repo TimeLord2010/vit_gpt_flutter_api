@@ -1,11 +1,8 @@
-## 1.6.1
-
-- Fix: `RealtimeVoiceModeProvider` creates messages in the chat correctly.
-
 ## 1.6.0
 
-- Feat: `VitGptFlutterConfiguration` not includes realtimeAudioPlayer factory method to customize
+- Feat: `VitGptFlutterConfiguration` now includes realtimeAudioPlayer factory method to customize
 the player used in the `RealtimeVoiceModeProvider`.
+- Fix: `RealtimeVoiceModeProvider` creates messages in the chat correctly.
 
 ## 1.5.6
 
