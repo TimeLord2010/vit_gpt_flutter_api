@@ -324,6 +324,9 @@ class ConversationProvider with ChangeNotifier {
 
     await deleteThread(id);
     onDelete(id);
+
+    conversation = null;
+    notifyListeners();
   }
 
   void _scrollToBottomIfNeeded() {
@@ -355,41 +358,56 @@ class ConversationProvider with ChangeNotifier {
           this.status = status;
           notifyListeners();
         },
-        onTranscriptionStart: (transcriptionStart) {
-          messages.add(Message(
-            date: DateTime.now(),
-            role: transcriptionStart.role,
-            text: '',
-            id: transcriptionStart.id,
-          ));
-          notifyListeners();
+        onSpeechEnd: (speechEnd) {
+          if (speechEnd.role == Role.user) {
+            messages.add(Message(
+              id: speechEnd.id,
+              date: DateTime.now(),
+              role: speechEnd.role,
+              text: '',
+            ));
+          }
         },
+        // onTranscriptionStart: (transcriptionStart) {
+        //   messages.add(Message(
+        //     date: DateTime.now(),
+        //     role: transcriptionStart.role,
+        //     text: '',
+        //     id: transcriptionStart.id,
+        //   ));
+        //   notifyListeners();
+        // },
         onTranscription: (transcriptionItem) {
-          var messages = this.messages;
-          if (messages.isEmpty) {
-            logger.warn(
-                'Unable to update message with text transcription: No messages found');
-            return;
+          Message? getUpdatableMessage() {
+            var messages = this.messages;
+
+            // Attempting to find the message with the same id
+            for (int i = messages.length - 1; i >= 0; i--) {
+              var m = messages[i];
+              if (m.id == transcriptionItem.id &&
+                  m.role == transcriptionItem.role) {
+                return m;
+              }
+            }
+            return null;
           }
 
-          // Attempting to find the message with the same id
-          Message? message;
-          for (int i = messages.length - 1; i >= 0; i--) {
-            var m = messages[i];
-            if (m.id == transcriptionItem.id &&
-                m.role == transcriptionItem.role) {
-              message = m;
-              break;
-            }
-          }
+          var message = getUpdatableMessage();
 
           if (message == null) {
-            logger.warn(
-                'Unable to update message with text transcription: No message found with id ${transcriptionItem.id}');
-            return;
+            var newMessage = Message(
+              id: transcriptionItem.id,
+              date: DateTime.now(),
+              text: '',
+              role: transcriptionItem.role,
+            );
+
+            messages.add(newMessage);
+
+            message = newMessage;
           }
 
-          message.text = transcriptionItem.text;
+          message.text += transcriptionItem.text;
 
           EasyThrottle.throttle(
             'updateUI:transcription',

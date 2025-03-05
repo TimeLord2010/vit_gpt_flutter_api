@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
+import 'package:vit_gpt_dart_api/data/models/realtime_events/speech/speech_end.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_item.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_start.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
@@ -26,8 +28,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final Future<void> Function() onStart;
 
   /// Called when a transcription starts. Either from the user or the assistant.
-  final void Function(TranscriptionStart transcriptionStart)
+  final void Function(TranscriptionStart transcriptionStart)?
       onTranscriptionStart;
+
+  final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
   final void Function(TranscriptionItem transcriptionItem) onTranscription;
@@ -40,10 +44,11 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   RealtimeVoiceModeProvider({
     required void Function(ChatStatus status) setStatus,
-    required this.onTranscriptionStart,
     required this.onTranscription,
     required this.onError,
     required this.onStart,
+    this.onTranscriptionStart,
+    this.onSpeechEnd,
     this.useIsolate = false,
   }) : _setStatus = setStatus;
 
@@ -120,10 +125,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     _setNewStreamPlayer();
 
     rep.onTranscriptionStart.listen((transcriptionStart) {
-      onTranscriptionStart(transcriptionStart);
+      onTranscriptionStart?.call(transcriptionStart);
     });
 
-    rep.onTranscription.listen((transcription) {
+    rep.onTranscriptionItem.listen((transcription) {
       // var role = transcription.role;
       // if (role == Role.user) {
       //   setStatus(ChatStatus.transcribing);
@@ -136,7 +141,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.onSpeech.listen((speech) {
       if (speech.role == Role.assistant) {
         setStatus(ChatStatus.speaking);
-        _processAiBytes(speech.bytes);
+        _processAiBytes(speech.audioData);
       }
     });
 
@@ -186,11 +191,20 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     });
   }
 
-  void _processAiBytes(Uint8List bytes) {
-    if (useIsolate) {
-      _sendPort?.send(_PlayAudioData(bytes));
+  void _processAiBytes(data) {
+    if (data is String) {
+      if (useIsolate) {
+        _sendPort?.send(_PlayBase64AudioData(data));
+      } else {
+        realtimePlayer?.appendData(data);
+      }
     } else {
-      realtimePlayer?.appendBytes(bytes);
+      Uint8List bytes = data;
+      if (useIsolate) {
+        _sendPort?.send(_PlayAudioData(bytes));
+      } else {
+        realtimePlayer?.appendBytes(bytes);
+      }
     }
   }
 
@@ -265,10 +279,10 @@ class _PlayAudioData {
   _PlayAudioData(this.audioData);
 }
 
-// class _PlayBase64AudioData {
-//   final String base64Data;
-//   _PlayBase64AudioData(this.base64Data);
-// }
+class _PlayBase64AudioData {
+  final String base64Data;
+  _PlayBase64AudioData(this.base64Data);
+}
 
 class _ResetStreamPlayer {}
 
@@ -315,8 +329,9 @@ void realtimeIsolate(SendPort sendPort) async {
 
   // Listen for messages
   await for (var msg in receivePort) {
-    if (msg is _PlayAudioData) {
-      realtimePlayer.appendBytes(msg.audioData);
+    if (msg is _PlayBase64AudioData) {
+      var bytes = base64Decode(msg.base64Data);
+      realtimePlayer.appendBytes(bytes);
     } else if (msg is _ResetStreamPlayer) {
       realtimePlayer.resetBuffer();
     } else if (msg is _DisposeRealtime) {

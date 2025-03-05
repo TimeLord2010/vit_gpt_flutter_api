@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:logger/logger.dart' show Level;
+import 'package:vit_gpt_dart_api/factories/logger.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/buffered_data_handler.dart';
 
@@ -28,10 +29,14 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   /// the player will cut off parts of the audio.
   /// This was observed using "flutter_sound" on version 9.23.1 when running
   /// on IOS. If this is no longer true in the future, we can remove this.
-  late final _bufferHandler = BufferedDataHandler((base64) {
-    var bytes = base64Decode(base64);
-    appendBytes(bytes);
-  });
+  late final _bufferHandler = BufferedDataHandler(
+    (base64) {
+      logger.debug('Adding data to player: ${base64.length} of length');
+      var bytes = base64Decode(base64);
+      appendBytes(bytes);
+    },
+    interval: Duration(milliseconds: 1200),
+  );
 
   Future<void> _setup() async {
     await _player.openPlayer();

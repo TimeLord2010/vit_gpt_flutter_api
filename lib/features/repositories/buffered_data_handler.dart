@@ -3,8 +3,8 @@ import 'dart:async';
 class BufferedDataHandler {
   final void Function(String) _addDataFunction;
 
-  /// Interval to wait before sending data in seconds.
-  final int _interval;
+  /// Interval to wait before sending data.
+  final Duration interval;
 
   /// Buffer to hold incoming data.
   String _dataBuffer = '';
@@ -27,8 +27,8 @@ class BufferedDataHandler {
   /// [interval] Time interval in milliseconds for transmitting buffered data.
   BufferedDataHandler(
     this._addDataFunction, {
-    int interval = 1000,
-  }) : _interval = interval;
+    this.interval = const Duration(seconds: 1),
+  });
 
   /// Adds data to the buffer and processes it with controlled timing.
   void addData(String base64String) {
@@ -40,14 +40,17 @@ class BufferedDataHandler {
     final elapsedTime = currentTime - _lastSentTime;
 
     // If it's been at least _interval milliseconds or no new data is received within the interval
-    if (elapsedTime >= _interval) {
+    if (elapsedTime >= interval.inMilliseconds) {
       _sendDataToPlayer();
     } else {
       _timer?.cancel();
 
       // Set a timer to send data if no further data arrives within the remaining interval
       _timer = Timer(
-          Duration(milliseconds: _interval - elapsedTime), _sendDataToPlayer);
+          Duration(
+            milliseconds: interval.inMilliseconds - elapsedTime,
+          ),
+          _sendDataToPlayer);
     }
   }
 
