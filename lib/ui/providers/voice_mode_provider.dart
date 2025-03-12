@@ -1,15 +1,18 @@
 import 'dart:async';
 
+import 'package:logger/logger.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/enums/chat_status.dart';
-import '../../factories/logger.dart';
 import '../../features/usecases/get_error_message.dart';
 
 class VoiceModeProvider with VoiceModeContract {
+  final Logger _logger =
+      VitGptFlutterConfiguration.groupedLogsFactory(['VoiceModeProvider']);
+
   final void Function() notifyListeners;
   final bool Function() isVoiceMode;
   final void Function(ChatStatus status) _setStatus;
@@ -79,7 +82,7 @@ class VoiceModeProvider with VoiceModeContract {
 
   /// Sends message to model, and speaks the model response as it gets streamed.
   Future<void> _getVoiceResponse(String input) async {
-    logger.info('Geting voice response');
+    _logger.i('Geting voice response');
 
     // For voice generation
     var speaker = await SpeakerHandler.fromLocalStorage();
@@ -96,7 +99,7 @@ class VoiceModeProvider with VoiceModeContract {
       onChunk: (chunk) async {
         var chatStatus = getStatus();
         if (chatStatus == ChatStatus.idle) {
-          logger.warn('Disposing speaker on chunk receive');
+          _logger.w('Disposing speaker on chunk receive');
           speaker.dispose();
           return;
         }
@@ -119,12 +122,12 @@ class VoiceModeProvider with VoiceModeContract {
 
     Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       if (speaker.hasPendingSpeaches) {
-        logger.warn('Has pending speaches');
+        _logger.w('Has pending speaches');
         return;
       }
       speaker.dispose();
       timer.cancel();
-      logger.info('Finished speaking a response!');
+      _logger.i('Finished speaking a response!');
 
       // Preventing recorder from working while the speaker is active.
       while (speaker.isSpeaking) {
@@ -144,7 +147,7 @@ class VoiceModeProvider with VoiceModeContract {
       if (getStatus() == ChatStatus.idle) {
         return;
       }
-      logger.info('Stop user listening');
+      _logger.i('Stop user listening');
 
       await VitGptFlutterConfiguration.onListenEnd?.call();
 
@@ -155,12 +158,12 @@ class VoiceModeProvider with VoiceModeContract {
       await transcriber?.endTranscription();
       String input = '';
       if (transcriptionStream != null) {
-        logger.debug('Looping transcriptions');
+        _logger.d('Looping transcriptions');
         await for (var chunk in transcriptionStream) {
-          logger.info('Transcription result: $chunk');
+          _logger.i('Transcription result: $chunk');
           input = chunk;
         }
-        logger.info('Transcription: $input');
+        _logger.i('Transcription: $input');
 
         // Sending to model
         if (getStatus() == ChatStatus.idle) {
@@ -180,7 +183,7 @@ class VoiceModeProvider with VoiceModeContract {
   }
 
   Future<bool> _listenToUser() async {
-    logger.info('Listening to user');
+    _logger.i('Listening to user');
     setStatus(ChatStatus.listeningToUser);
     var transcriber = createTranscriberRepository();
     if (transcriber is TranscriberRepository) {
@@ -191,7 +194,7 @@ class VoiceModeProvider with VoiceModeContract {
     await transcriber.startTranscribe();
     notifyListeners();
     transcriber.onSilenceChange.listen((silence) {
-      logger.info('Silence $silence');
+      _logger.i('Silence $silence');
       if (silence) {
         _stopListening();
       }
@@ -204,11 +207,11 @@ class VoiceModeProvider with VoiceModeContract {
   @override
   Future<void> stopVoiceMode() async {
     if (!isVoiceMode()) {
-      logger.warn('Stopping voice mode aborted since voice mode is not active');
+      _logger.w('Stopping voice mode aborted since voice mode is not active');
       notifyListeners();
       return;
     }
-    logger.info('Stopping voice mode');
+    _logger.i('Stopping voice mode');
 
     audioVolumeStream = null;
     _isInVoiceMode = false;
@@ -241,7 +244,7 @@ class VoiceModeProvider with VoiceModeContract {
         await _stopListening();
       case ChatStatus.answeringAndSpeaking:
       case ChatStatus.speaking:
-        logger.info('Stopped AI speaking');
+        _logger.i('Stopped AI speaking');
         _speaker?.dispose();
         _speaker = null;
       default:

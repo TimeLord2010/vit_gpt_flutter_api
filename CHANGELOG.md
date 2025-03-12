@@ -1,3 +1,7 @@
+## 1.6.1
+
+- Fix: Realtime API no longer freezes the app.
+
 ## 1.6.0
 
 - Feat: `VitGptFlutterConfiguration` now includes realtimeAudioPlayer factory method to customize

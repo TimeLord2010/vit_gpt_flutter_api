@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
+import 'package:logger/logger.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/speech/speech_end.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_item.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_start.dart';
@@ -10,18 +11,18 @@ import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
+import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:vit_gpt_flutter_api/factories/create_realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
-import 'package:vit_logger/vit_logger.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-var _logger = TerminalLogger(
-  event: 'RealtimeVoiceModeProvider',
-);
-
 class RealtimeVoiceModeProvider with VoiceModeContract {
+  final Logger _logger = VitGptFlutterConfiguration.groupedLogsFactory([
+    'RealtimeVoiceModeProvider',
+  ]);
+
   final void Function(ChatStatus) _setStatus;
 
   /// Called once the voice mode was started by the user.
@@ -82,6 +83,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     if (useIsolate) {
       await _startIsolate();
     } else {
+      _logger.d('Created realtime player in main isolate');
       realtimePlayer = createRealtimeAudioPlayer();
     }
   }
@@ -104,13 +106,13 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       _isolate = null;
       _sendPort = null;
     } on Exception catch (e) {
-      _logger.error('Error disposing player: $e');
+      _logger.e('Error disposing player', error: e);
     }
   }
 
   @override
   Future<RealtimeModel> startVoiceMode() async {
-    _logger.info('Starting voice mode');
+    _logger.i('Starting voice mode');
     realtimeModel?.close();
 
     var rep = createRealtimeRepository();
@@ -181,6 +183,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   Future<void> _startRecording() async {
+    _logger.d('Starting to record user');
     setStatus(ChatStatus.listeningToUser);
     Stream<Uint8List> userAudioStream = await recorder.startStream();
 

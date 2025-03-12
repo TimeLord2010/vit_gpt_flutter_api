@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/players/just_audio_player.dart';
+import 'package:vit_gpt_flutter_api/features/repositories/audio/players/soloud_audio_player.dart';
 
 import 'mp3_audio_player.dart';
 import 'ogg_audio_player.dart';
@@ -35,6 +36,11 @@ class VitAudioPlayer extends AudioPlayer with ChangeNotifier {
         isAsset: isAsset,
         //randomizeVolumeStream: randomizeVolumeStream,
       );
+    }
+
+    if (extension == AudioFormat.wav.name ||
+        extension == AudioFormat.pcm.name) {
+      return SoLoudAudioPlayer(name);
     }
 
     throw Exception('Unsupported file extension');

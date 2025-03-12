@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:vit_gpt_dart_api/data/configuration.dart';
+
 mixin RealtimeAudioPlayer {
   Future<void> createBufferStream();
 
@@ -16,6 +18,7 @@ mixin RealtimeAudioPlayer {
   }
 
   void resetBuffer() {
+    VitGptConfiguration.logger.d('Reseting realtime audio player stream');
     disposeBufferStream();
     createBufferStream();
   }

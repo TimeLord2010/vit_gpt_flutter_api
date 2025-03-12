@@ -2,12 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
+import 'package:logger/web.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
+import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/players/vit_audio_player.dart';
-import 'package:vit_logger/vit_logger.dart';
 
 import '../repositories/audio/vit_audio_recorder.dart';
 import '../repositories/local_storage_repository.dart';
@@ -19,8 +20,11 @@ Future<void> setupUI({
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isIOS) {
-    TerminalLogger.printer = TerminalPrinter.developerLog;
-    //TerminalLogger.disableColorfulOutput = true;
+    VitGptFlutterConfiguration.logger
+        .d('Disabling colors on logs since we are in IOS');
+    VitGptConfiguration.logger = Logger(
+      printer: SimplePrinter(colors: false),
+    );
   }
 
   var sp = await SharedPreferences.getInstance();

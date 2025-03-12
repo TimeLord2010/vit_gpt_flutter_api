@@ -8,10 +8,10 @@ import 'package:vit_gpt_dart_api/factories/create_assistant_repository.dart';
 import 'package:vit_gpt_dart_api/factories/http_client.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
+import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:vit_gpt_flutter_api/ui/providers/realtime_voice_mode_provider.dart';
 
 import '../../data/enums/chat_status.dart';
-import '../../factories/logger.dart';
 import '../../features/usecases/get_error_message.dart';
 import 'voice_mode_provider.dart';
 
@@ -88,8 +88,8 @@ class ConversationProvider with ChangeNotifier {
   ChatStatus get status => _status;
   set status(ChatStatus newStatus) {
     if (_status != newStatus) {
-      logger.debug(
-          'Changing chat status from ${_status.name} to ${newStatus.name}');
+      VitGptFlutterConfiguration.logger
+          .d('Changing chat status from ${_status.name} to ${newStatus.name}');
     }
     _status = newStatus;
   }
@@ -148,20 +148,22 @@ class ConversationProvider with ChangeNotifier {
   Future<void> setup() async {
     var c = conversation;
     if (c == null) {
-      logger.warn('Aborting messages load: no original conversation');
+      VitGptFlutterConfiguration.logger
+          .w('Aborting messages load: no original conversation');
       return;
     }
     if (c.messages.isNotEmpty) {
-      logger.warn('Aborting load messages: messages already found');
+      VitGptFlutterConfiguration.logger
+          .w('Aborting load messages: messages already found');
       return;
     }
     var id = c.id;
     if (id == null) {
-      logger.warn('Unable to load messages: no id');
+      VitGptFlutterConfiguration.logger.w('Unable to load messages: no id');
       return;
     }
     var messages = await loadThreadMessages(id);
-    logger.info('Found ${messages.length} messages');
+    VitGptFlutterConfiguration.logger.i('Found ${messages.length} messages');
     messages.sortByDate((x) => x.date);
     c.messages.addAll(messages);
 
@@ -257,12 +259,12 @@ class ConversationProvider with ChangeNotifier {
           );
         },
       );
-      logger.info('Finished reading response stream');
+      VitGptFlutterConfiguration.logger.i('Finished reading response stream');
 
       if (onTextResponse != null) onTextResponse!(this);
     } catch (e) {
       var msg = getErrorMessage(e) ?? 'Failed to fetch response';
-      logger.error(msg);
+      VitGptFlutterConfiguration.logger.e(msg, error: e);
       if (context != null && context.mounted) {
         await showDialog(
           context: context,
@@ -318,7 +320,8 @@ class ConversationProvider with ChangeNotifier {
 
     var id = c?.id;
     if (id == null) {
-      logger.warn('Unabled to delete conversation without an id');
+      VitGptFlutterConfiguration.logger
+          .w('Unabled to delete conversation without an id');
       return;
     }
 

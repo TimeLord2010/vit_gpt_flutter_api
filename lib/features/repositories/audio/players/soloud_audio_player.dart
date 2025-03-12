@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart' as api;
-import 'package:vit_gpt_flutter_api/factories/logger.dart';
+import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 
 class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
   final String path;
@@ -45,7 +45,7 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
           completer.complete();
         }
       } on Exception catch (e) {
-        logger.error('Error in play: $e');
+        VitGptFlutterConfiguration.logger.e('Error in play', error: e);
         t.cancel();
         completer.completeError(e);
       }
