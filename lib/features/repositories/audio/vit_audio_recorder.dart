@@ -36,7 +36,8 @@ class VitAudioRecorder extends AudioRecorderModel {
   Future<void> start() async {
     await _recorder.start(
       const RecordConfig(encoder: AudioEncoder.wav),
-      path: '${VitGptConfiguration.internalFilesDirectory.path}/myInput.wav',
+      path:
+          '${VitGptDartConfiguration.internalFilesDirectory.path}/myInput.wav',
     );
   }
 

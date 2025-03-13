@@ -15,14 +15,13 @@ import '../repositories/local_storage_repository.dart';
 
 Future<void> setupUI({
   String? openAiKey,
-  TTSModel Function()? tts,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isIOS) {
     VitGptFlutterConfiguration.logger
         .d('Disabling colors on logs since we are in IOS');
-    VitGptConfiguration.logger = Logger(
+    VitGptDartConfiguration.logger = Logger(
       printer: SimplePrinter(colors: false),
     );
   }
@@ -30,31 +29,28 @@ Future<void> setupUI({
   var sp = await SharedPreferences.getInstance();
   GetIt.I.registerSingleton(sp);
 
+  // Setting up local storage
   Directory appDocDir = await getApplicationDocumentsDirectory();
   String dbPath = '${appDocDir.path}${Platform.pathSeparator}local_storage.db';
   Database db = sqlite3.open(dbPath);
   var localStorageRepository = LocalStorageRepository(sp, db);
   await localStorageRepository.prepare();
-
   GetIt.I.registerSingleton(localStorageRepository);
+  DynamicFactories.localStorage = () => LocalStorageRepository(sp, db);
 
-  setupFactories(
-    localStorage: () => LocalStorageRepository(sp, db),
-    recorder: () => VitAudioRecorder(),
-    tts: tts,
-    simplePlayerFactory: (file) {
-      return VitAudioPlayer(
-        audioPath: file.path,
-        randomizeVolumeStream: true,
-      ).getPlayer();
-    },
-  );
+  // Setting input and output audio classes.
+  DynamicFactories.recorder = () => VitAudioRecorder();
+  DynamicFactories.simplePlayer = (file) {
+    return VitAudioPlayer(
+      audioPath: file.path,
+      randomizeVolumeStream: true,
+    ).getPlayer();
+  };
 
-  var directory = await getApplicationDocumentsDirectory();
-  VitGptConfiguration.internalFilesDirectory = directory;
+  VitGptDartConfiguration.internalFilesDirectory = appDocDir;
 
-  VitGptConfiguration.useHighQualityTts = false;
-  VitGptConfiguration.ttsFormat = AudioFormat.mp3;
+  VitGptDartConfiguration.useHighQualityTts = false;
+  VitGptDartConfiguration.ttsFormat = AudioFormat.mp3;
 
   // Setting the API token to the http client.
   if (openAiKey != null) {

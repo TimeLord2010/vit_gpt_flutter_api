@@ -369,13 +369,19 @@ class ConversationProvider with ChangeNotifier {
           this.status = status;
           notifyListeners();
         },
-        onTranscriptionEnd: (transcriptionEnd) {
-          messages.add(Message(
+        onTranscriptionEnd: (transcriptionEnd) async {
+          var msg = Message(
             id: transcriptionEnd.id,
             date: DateTime.now(),
             role: transcriptionEnd.role,
             text: transcriptionEnd.content,
-          ));
+          );
+          messages.add(msg);
+          var id = conversation?.id;
+          if (id != null) {
+            var rep = createThreadsRepository();
+            await rep.createMessage(id, msg);
+          }
         },
         onError: (errorMessage) {
           _showError(

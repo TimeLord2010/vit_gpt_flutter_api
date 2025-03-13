@@ -1,3 +1,7 @@
+## 1.8.0
+
+- Feat: Creates messages in OpenAI thread when using realtime API.
+
 ## 1.7.1
 
 - Fix: Fixed messages order when using realtime API.
