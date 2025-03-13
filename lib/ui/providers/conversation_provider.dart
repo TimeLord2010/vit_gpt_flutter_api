@@ -104,8 +104,15 @@ class ConversationProvider with ChangeNotifier {
     };
   }
 
+  /// Returns `true`, when the voice mode is ready and working.
+  ///
+  /// If you need to show to the user a progress indicator, see
+  /// [voideModeProvider.isLoadingVoiceMode].
   bool get isVoiceMode {
-    if (voiceModeProvider.isInVoiceMode) return true;
+    var p = voiceModeProvider;
+    if (p.isInVoiceMode && !voiceModeProvider.isLoadingVoiceMode) {
+      return true;
+    }
     return switch (status) {
       ChatStatus.answeringAndSpeaking => true,
       ChatStatus.listeningToUser => true,
@@ -355,6 +362,7 @@ class ConversationProvider with ChangeNotifier {
     if (useRealtimeApi) {
       var p = RealtimeVoiceModeProvider(
         onStart: () async {
+          notifyListeners();
           await _createConversationIfNecessary();
         },
         setStatus: (status) {

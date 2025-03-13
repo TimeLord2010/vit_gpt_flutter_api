@@ -9,7 +9,11 @@ mixin VoiceModeContract {
   /// If the AI is speaking, it returns the volume of the AI's voice.
   Stream<double>? get audioVolumeStream;
 
+  /// Indicates the voice mode is active or not.
   bool get isInVoiceMode;
+
+  /// Indicates the voice mode is being started or exited.
+  bool get isLoadingVoiceMode;
 
   /// Stops the current voice interaction.
   ///

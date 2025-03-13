@@ -254,4 +254,10 @@ class VoiceModeProvider with VoiceModeContract {
 
   @override
   void setStatus(ChatStatus status) => _setStatus(status);
+
+  @override
+  bool get isLoadingVoiceMode {
+    // no loading is required and the recording is started immediatly.
+    return false;
+  }
 }

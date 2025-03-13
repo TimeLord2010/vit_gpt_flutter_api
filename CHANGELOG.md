@@ -1,3 +1,9 @@
+## 1.7.0
+
+- BREAKING: Removed isolate support from `RealtimeVoiceModeProvider`. If you really need to remove workload from the main thread, implement this in a custom realtime audio player.
+- Feat: Added indicator for voice mode starting to all providers under `VoiceModeContract`.
+- Fix: `ConversationProvider.isVoiceMode` now only returns true is the voice mode provider is done loading.
+
 ## 1.6.1
 
 - Fix: Realtime API no longer freezes the app.
