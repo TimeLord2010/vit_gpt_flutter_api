@@ -1,5 +1,4 @@
 import 'package:logger/logger.dart';
-import 'package:vit_gpt_dart_api/data/configuration.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 
 class LogGroup extends LogPrinter {
@@ -26,7 +25,7 @@ class LogGroup extends LogPrinter {
 
 Logger createGroupedLogger(List<String> tags) {
   return Logger(
-    filter: AlwaysLogFilter(),
+    // filter: AlwaysLogFilter(),
     printer: LogGroup(
       tags: tags,
     ),

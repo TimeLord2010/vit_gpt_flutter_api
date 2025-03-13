@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/speech/speech_end.dart';
+import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_end.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_item.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_start.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
@@ -31,17 +32,20 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
-  final void Function(TranscriptionItem transcriptionItem) onTranscription;
+  final void Function(TranscriptionItem transcriptionItem)? onTranscription;
+
+  final void Function(TranscriptionEnd transcriptionEnd)? onTranscriptionEnd;
 
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
 
   RealtimeVoiceModeProvider({
     required void Function(ChatStatus status) setStatus,
-    required this.onTranscription,
     required this.onError,
     required this.onStart,
     this.onTranscriptionStart,
+    this.onTranscription,
+    this.onTranscriptionEnd,
     this.onSpeechEnd,
   }) : _setStatus = setStatus;
 
@@ -133,9 +137,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       onTranscriptionStart?.call(transcriptionStart);
     });
 
-    rep.onTranscriptionItem.listen((transcription) {
-      onTranscription(transcription);
-    });
+    var onTranscription = this.onTranscription;
+    if (onTranscription != null) {
+      rep.onTranscriptionItem.listen((transcription) {
+        onTranscription(transcription);
+      });
+    }
+
+    var onTranscriptionEnd = this.onTranscriptionEnd;
+    if (onTranscriptionEnd != null) {
+      rep.onTranscriptionEnd.listen((transcriptionEnd) {
+        onTranscriptionEnd(transcriptionEnd);
+      });
+    }
 
     rep.onSpeech.listen((speech) {
       if (speech.role == Role.assistant) {

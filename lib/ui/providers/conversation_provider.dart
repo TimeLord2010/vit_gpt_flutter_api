@@ -369,62 +369,13 @@ class ConversationProvider with ChangeNotifier {
           this.status = status;
           notifyListeners();
         },
-        onSpeechEnd: (speechEnd) {
-          if (speechEnd.role == Role.user) {
-            messages.add(Message(
-              id: speechEnd.id,
-              date: DateTime.now(),
-              role: speechEnd.role,
-              text: '',
-            ));
-          }
-        },
-        // onTranscriptionStart: (transcriptionStart) {
-        //   messages.add(Message(
-        //     date: DateTime.now(),
-        //     role: transcriptionStart.role,
-        //     text: '',
-        //     id: transcriptionStart.id,
-        //   ));
-        //   notifyListeners();
-        // },
-        onTranscription: (transcriptionItem) {
-          Message? getUpdatableMessage() {
-            var messages = this.messages;
-
-            // Attempting to find the message with the same id
-            for (int i = messages.length - 1; i >= 0; i--) {
-              var m = messages[i];
-              if (m.id == transcriptionItem.id &&
-                  m.role == transcriptionItem.role) {
-                return m;
-              }
-            }
-            return null;
-          }
-
-          var message = getUpdatableMessage();
-
-          if (message == null) {
-            var newMessage = Message(
-              id: transcriptionItem.id,
-              date: DateTime.now(),
-              text: '',
-              role: transcriptionItem.role,
-            );
-
-            messages.add(newMessage);
-
-            message = newMessage;
-          }
-
-          message.text += transcriptionItem.text;
-
-          EasyThrottle.throttle(
-            'updateUI:transcription',
-            Duration(milliseconds: 200),
-            () => notifyListeners(),
-          );
+        onTranscriptionEnd: (transcriptionEnd) {
+          messages.add(Message(
+            id: transcriptionEnd.id,
+            date: DateTime.now(),
+            role: transcriptionEnd.role,
+            text: transcriptionEnd.content,
+          ));
         },
         onError: (errorMessage) {
           _showError(

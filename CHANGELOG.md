@@ -1,3 +1,7 @@
+## 1.7.1
+
+- Fix: Fixed messages order when using realtime API.
+
 ## 1.7.0
 
 - BREAKING: Removed isolate support from `RealtimeVoiceModeProvider`. If you really need to remove workload from the main thread, implement this in a custom realtime audio player.
