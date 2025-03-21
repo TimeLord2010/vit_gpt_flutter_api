@@ -1,3 +1,8 @@
+## 1.8.1
+
+- Fix: When sending a message using the `ConversationProvider`, the user message is shown as soon
+as possible, instead of when the connection to the response stream is stablished.
+
 ## 1.8.0
 
 - Feat: Creates messages in OpenAI thread when using realtime API.

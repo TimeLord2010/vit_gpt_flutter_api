@@ -203,10 +203,16 @@ class ConversationProvider with ChangeNotifier {
       if (isResponding) {
         return;
       }
+
       status = ChatStatus.sendingPrompt;
       notifyListeners();
 
       await _createConversationIfNecessary();
+
+      var text = controller.text;
+      var selfMessage = Message.user(message: text);
+      conversation?.messages.add(selfMessage);
+      notifyListeners();
 
       // Updating 'lastUpdate' date of conversation
       var updated = conversation!.recordUpdate();
@@ -241,12 +247,10 @@ class ConversationProvider with ChangeNotifier {
         },
         onJsonComplete: onJsonComplete,
       );
-      var text = controller.text;
 
       // Streaming response
       controller.clear();
       await rep.prompt(
-        message: text,
         previousMessages: [
           if (assistant == null) ...conversation!.messages,
         ],
