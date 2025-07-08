@@ -133,6 +133,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     realtimePlayer = createRealtimeAudioPlayer();
     realtimePlayer?.resetBuffer();
 
+    realtimePlayer?.stopPlayStream.listen((_) {
+      setStatus(ChatStatus.listeningToUser);
+    });
+
     rep.onTranscriptionStart.listen((transcriptionStart) {
       onTranscriptionStart?.call(transcriptionStart);
     });
@@ -165,20 +169,14 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       }
     });
 
-    rep.onSpeechEnd.listen((speechEnd) {
-      var role = speechEnd.role;
-      if (role == Role.assistant) {
-        // TODO: Just because the stream of audio ended, it doesn't mean that the assistant finished speaking.
-        setStatus(ChatStatus.listeningToUser);
-      }
-    });
-
     rep.onConnectionOpen.listen((_) {
       _isLoadingVoiceMode = false;
       _startRecording();
     });
 
-    rep.onConnectionClose.listen((_) => setStatus(ChatStatus.idle));
+    rep.onConnectionClose.listen((_) {
+      setStatus(ChatStatus.idle);
+    });
 
     rep.onError.listen((error) {
       String msg = getErrorMessage(error) ?? 'Falha desconhecida';
@@ -231,6 +229,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   Future<void> _startRecording() async {
     _logger.d('Starting to record user');
     setStatus(ChatStatus.listeningToUser);
+
+    await unmuteMic();
+  }
+
+  Future<void> muteMic() async {
+    await recorder.stop();
+  }
+
+  Future<void> unmuteMic() async {
+    if (await recorder.isRecording()) {
+      return;
+    }
+
     Stream<Uint8List> userAudioStream = await recorder.startStream();
 
     userAudioStream.listen((bytes) {

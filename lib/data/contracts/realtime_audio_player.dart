@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 
 mixin RealtimeAudioPlayer {
+  Stream<void> get stopPlayStream;
+
   Future<void> createBufferStream();
 
   void disposeBufferStream();
