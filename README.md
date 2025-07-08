@@ -311,6 +311,50 @@ await realtimeProvider.stopVoiceMode();
 
 ---
 
+# Setup and Initialization
+
+## setupUI Function
+**Purpose**: Initializes all necessary components, singletons, and configurations required for the VIT GPT Flutter API package to function properly.
+
+**Parameters**:
+- `openAiKey`: Optional OpenAI API key for immediate configuration
+
+**Complete Usage Example**:
+```dart
+import 'package:vit_gpt_flutter_api/features/usecases/setup_ui.dart';
+
+void main() async {
+  // Initialize the package with optional API key
+  await setupUI(openAiKey: 'your-openai-api-key');
+
+  runApp(MyApp());
+}
+
+// Alternative: Initialize without API key and set it later
+void main() async {
+  await setupUI();
+
+  // Set API key later through LocalStorageRepository
+  final repository = GetIt.I<LocalStorageRepository>();
+  await repository.saveApiToken('your-openai-api-key');
+
+  runApp(MyApp());
+}
+```
+
+**Important Notes**:
+- **Must be called before runApp()**: Essential for proper package initialization
+- **Async function**: Always await the setupUI call
+- **One-time setup**: Should only be called once during app startup
+- **Dependency injection**: Makes components available throughout the app via GetIt
+- **Platform compatibility**: Handles iOS-specific configurations automatically
+
+**Dependencies Registered**:
+- `SharedPreferences`: Available via `GetIt.I<SharedPreferences>()`
+- `LocalStorageRepository`: Available via `GetIt.I<LocalStorageRepository>()`
+
+---
+
 # Usage Guide
 
 ## Using Providers with the Provider Package
