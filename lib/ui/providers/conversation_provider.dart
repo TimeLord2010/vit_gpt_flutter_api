@@ -17,9 +17,17 @@ import 'voice_mode_provider.dart';
 
 class ConversationProvider with ChangeNotifier {
   final BuildContext context;
+
+  /// If provided, this will continue a previous conversation/thread.
   Conversation? conversation;
+
+  /// Called when a conversation/thread is created.
   final void Function(Conversation) onCreate;
+
+  /// Called when a conversation/thread is deleted.
   final void Function(String id) onDelete;
+
+  /// Method to process the original json sent by OpenAI.
   final void Function(Map<String, dynamic>)? onJsonComplete;
 
   /// Called after the user sent a message and the model finished responding
@@ -76,6 +84,7 @@ class ConversationProvider with ChangeNotifier {
     },
   );
 
+  /// The assistant to use in the thread.
   Assistant? _assistant;
   Assistant? get assistant => _assistant;
   set assistant(Assistant? value) {
