@@ -1,3 +1,8 @@
+## 1.9.0
+
+- Feat: Added audio play stop stream on realtime audio player;
+- Fix: `RealtimeVoiceModeProvider` now correctly sets ChatStatus.listeningToUser on the right times.
+
 ## 1.8.1
 
 - Fix: When sending a message using the `ConversationProvider`, the user message is shown as soon
