@@ -1,3 +1,8 @@
+## 1.10.0
+
+- `RealtimeVoiceModeProvider` updates "_audioVolumeStreamController" with the ai player volume
+levels.
+
 ## 1.9.1
 
 - Doc: Added documentation for the package
