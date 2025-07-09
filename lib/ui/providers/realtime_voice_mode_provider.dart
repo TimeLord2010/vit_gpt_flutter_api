@@ -13,7 +13,7 @@ import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:vit_gpt_flutter_api/factories/create_realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
-import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity.dart';
+import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity_from_pcm_16.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -135,6 +135,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     realtimePlayer?.stopPlayStream.listen((_) {
       setStatus(ChatStatus.listeningToUser);
+    });
+
+    realtimePlayer?.volumeStream.listen((volume) {
+      _audioVolumeStreamController.add(volume);
     });
 
     rep.onTranscriptionStart.listen((transcriptionStart) {

@@ -13,18 +13,12 @@ class VitGptFlutterConfiguration {
   static RealtimeAudioPlayer Function()? realtimeAudioPlayer;
 
   static var logger = Logger(
-    // filter: AlwaysLogFilter(),
     printer: SimplePrinter(
       colors: !Platform.isIOS,
     ),
-    level: Level.error,
+    level: Level.debug,
   );
 
   static Logger Function(List<String> tags) groupedLogsFactory =
       createGroupedLogger;
 }
-
-// class AlwaysLogFilter extends LogFilter {
-//   @override
-//   bool shouldLog(LogEvent event) => true;
-// }
