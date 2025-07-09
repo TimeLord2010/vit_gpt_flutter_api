@@ -1,3 +1,7 @@
+## 1.9.1
+
+- Doc: Added documentation for the package
+
 ## 1.9.0
 
 - Feat: Added audio play stop stream on realtime audio player;
