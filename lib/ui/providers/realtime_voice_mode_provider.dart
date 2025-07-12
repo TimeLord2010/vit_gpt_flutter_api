@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
+import 'package:vit_gpt_dart_api/data/models/realtime_events/realtime_response.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/speech/speech_end.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_end.dart';
 import 'package:vit_gpt_dart_api/data/models/realtime_events/transcription/transcription_item.dart';
@@ -36,6 +37,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   final void Function(TranscriptionEnd transcriptionEnd)? onTranscriptionEnd;
 
+  final void Function(RealtimeResponse response)? onResponse;
+
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
 
@@ -46,6 +49,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     this.onTranscriptionStart,
     this.onTranscription,
     this.onTranscriptionEnd,
+    this.onResponse,
     this.onSpeechEnd,
   }) : _setStatus = setStatus;
 
@@ -128,6 +132,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     var rep = createRealtimeRepository();
     realtimeModel = rep;
     rep.open();
+
+    rep.onResponse.listen((response) async {
+      onResponse?.call(response);
+    });
 
     // Creating realtime audio player
     realtimePlayer = createRealtimeAudioPlayer();

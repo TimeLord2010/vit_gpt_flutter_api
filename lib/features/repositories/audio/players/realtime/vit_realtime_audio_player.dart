@@ -64,7 +64,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     final chunkDuration = Duration(
       microseconds: (sampleCount * 1000000 ~/ 24000), // 24kHz sample rate
     );
-    log.d('Audio chunk duration: $chunkDuration');
 
     // Create volume chunks based on granularity
     _createVolumeChunks(audioData, chunkDuration);
@@ -125,7 +124,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
       // Calculate volume intensity for this segment using logarithmic peak method
       final volumeIntensity = _getVolume(segmentData);
-      log.d('Volume for segment: $volumeIntensity');
 
       // Create volume chunk for this segment
       final chunk = VolumeChunk(
@@ -209,11 +207,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
         log.i('Emitting volume chunk ${currentChunk.volumeIntensity}');
         _volumeStreamController.add(currentChunk.volumeIntensity);
         _lastEmittedVolume = currentChunk.volumeIntensity;
-      } else {
-        log.w('Volume chunk found, but volume did not change ($currentVol)');
       }
-    } else {
-      log.w('No volume chunk found');
     }
   }
 

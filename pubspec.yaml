@@ -23,7 +23,8 @@ dependencies:
   shared_preferences: ^2.3.3
   sqlite3: ^2.5.0
   vit_dart_extensions: ^3.0.0
-  vit_gpt_dart_api: ^5.1.0
+  vit_gpt_dart_api:
+    path: ../vit_gpt_dart_api
   wakelock_plus: ^1.2.10
 
 dev_dependencies:

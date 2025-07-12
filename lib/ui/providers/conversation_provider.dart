@@ -390,6 +390,27 @@ class ConversationProvider with ChangeNotifier {
             text: transcriptionEnd.content,
           );
           messages.add(msg);
+
+          if (transcriptionEnd.role == Role.user) {
+            var id = conversation?.id;
+            if (id != null) {
+              var rep = createThreadsRepository();
+              await rep.createMessage(id, msg);
+            }
+          }
+        },
+        onResponse: (response) async {
+          var outputItem = response.output.firstWhereOrNull((x) {
+            return x.role == Role.assistant;
+          });
+          var content = outputItem?.content.single;
+          var text = content?.text ?? content?.transcript;
+          if (text == null) return;
+
+          var msg = Message.assistant(
+            message: text,
+            usage: response.usage,
+          );
           var id = conversation?.id;
           if (id != null) {
             var rep = createThreadsRepository();
