@@ -70,6 +70,16 @@ class VitAudioRecorder extends AudioRecorderModel {
   Future<bool> isRecording() {
     return _recorder.isRecording();
   }
+
+  @override
+  Future<void> pause() async {
+    await _recorder.pause();
+  }
+
+  @override
+  Future<void> resume() async {
+    await _recorder.resume();
+  }
 }
 
 double _calcFromAmp(Amplitude amp) {

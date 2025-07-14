@@ -69,6 +69,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   // Helper variable for [isInVoiceMode].
   bool _isVoiceMode = false;
 
+  bool isPaused = false;
+
   final _audioVolumeStreamController = StreamController<double>.broadcast();
 
   // Helper variable to prevent unnecessary calls to [setStatus].
@@ -240,27 +242,28 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   Future<void> _startRecording() async {
     _logger.d('Starting to record user');
-    setStatus(ChatStatus.listeningToUser);
-
-    await unmuteMic();
-  }
-
-  Future<void> muteMic() async {
-    await recorder.stop();
-  }
-
-  Future<void> unmuteMic() async {
-    if (await recorder.isRecording()) {
-      return;
-    }
 
     Stream<Uint8List> userAudioStream = await recorder.startStream();
+    setStatus(ChatStatus.listeningToUser);
 
     userAudioStream.listen((bytes) {
       realtimeModel?.sendUserAudio(bytes);
       var volume = getAudioIntensityFromPcm16(bytes);
       _audioVolumeStreamController.add(volume);
     });
+  }
+
+  Future<void> muteMic() async {
+    isPaused = true;
+    await recorder.pause();
+  }
+
+  Future<void> unmuteMic() async {
+    if (!isPaused) {
+      return;
+    }
+    await recorder.resume();
+    isPaused = false;
   }
 
   void _processAiBytes(data) {

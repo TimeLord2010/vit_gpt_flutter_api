@@ -1,3 +1,8 @@
+## 1.10.1
+
+- Fix: Mute and unmute microphone now does not interfere on the ai audio in the `RealtimeVoiceModeProvider`.
+- Fix: ChatStatus is only changed to listening to user initially when the microphone recording is ready.
+
 ## 1.10.0
 
 - `RealtimeVoiceModeProvider` updates "_audioVolumeStreamController" with the ai player volume
