@@ -262,8 +262,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     if (!isPaused) {
       return;
     }
-    await recorder.resume();
     isPaused = false;
+    await recorder.resume();
   }
 
   void _processAiBytes(data) {
