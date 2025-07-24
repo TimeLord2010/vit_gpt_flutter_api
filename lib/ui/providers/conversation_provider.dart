@@ -385,7 +385,7 @@ class ConversationProvider with ChangeNotifier {
         onTranscriptionEnd: (transcriptionEnd) async {
           var msg = Message(
             id: transcriptionEnd.id,
-            date: DateTime.now(),
+            date: transcriptionEnd.createdAt ?? DateTime.now(),
             role: transcriptionEnd.role,
             text: transcriptionEnd.content,
           );

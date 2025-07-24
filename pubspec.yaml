@@ -19,11 +19,11 @@ dependencies:
   just_audio: ^0.9.42
   logger: ^2.5.0
   path_provider: ^2.1.5
-  record: ^5.2.0
+  record: ^6.0.0
   shared_preferences: ^2.3.3
   sqlite3: ^2.5.0
   vit_dart_extensions: ^3.0.0
-  vit_gpt_dart_api: ^6.0.2
+  vit_gpt_dart_api: ^6.0.3
   wakelock_plus: ^1.2.10
 
 dev_dependencies:
