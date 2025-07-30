@@ -1,11 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/web.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqlite3/sqlite3.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/players/vit_audio_player.dart';
@@ -18,9 +17,8 @@ Future<void> setupUI({
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isIOS) {
-    VitGptFlutterConfiguration.logger
-        .d('Disabling colors on logs since we are in IOS');
+  if (!kIsWeb && Platform.isIOS) {
+    VitGptFlutterConfiguration.logger.d('Disabling colors on logs since we are in IOS');
     VitGptDartConfiguration.logger = Logger(
       printer: SimplePrinter(colors: false),
     );
@@ -30,13 +28,12 @@ Future<void> setupUI({
   GetIt.I.registerSingleton(sp);
 
   // Setting up local storage
-  Directory appDocDir = await getApplicationDocumentsDirectory();
-  String dbPath = '${appDocDir.path}${Platform.pathSeparator}local_storage.db';
-  Database db = sqlite3.open(dbPath);
-  var localStorageRepository = LocalStorageRepository(sp, db);
+  var localStorageRepository = LocalStorageRepository(sp);
   await localStorageRepository.prepare();
-  GetIt.I.registerSingleton(localStorageRepository);
-  DynamicFactories.localStorage = () => LocalStorageRepository(sp, db);
+  GetIt.I.registerSingleton<LocalStorageModel>(localStorageRepository);
+  DynamicFactories.localStorage = () => LocalStorageRepository(sp);
+
+  //VitGptDartConfiguration.internalFilesDirectory = appDocDir;
 
   // Setting input and output audio classes.
   DynamicFactories.recorder = () => VitAudioRecorder();
@@ -46,8 +43,6 @@ Future<void> setupUI({
       randomizeVolumeStream: true,
     ).getPlayer();
   };
-
-  VitGptDartConfiguration.internalFilesDirectory = appDocDir;
 
   VitGptDartConfiguration.useHighQualityTts = false;
   VitGptDartConfiguration.ttsFormat = AudioFormat.mp3;

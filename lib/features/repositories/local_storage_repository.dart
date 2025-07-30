@@ -1,25 +1,18 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqlite3/sqlite3.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 
 class LocalStorageRepository extends LocalStorageModel {
+  
+  @override
   final SharedPreferences preferences;
-  final Database db;
 
-  LocalStorageRepository(this.preferences, this.db);
+  LocalStorageRepository(this.preferences);
 
   /// Creates any necessary tables, indexes, or triggers required to use
   /// this class.
   ///
   /// Any maintenance to the database could also execute.
-  Future<void> prepare() async {
-    db.execute('''
-      CREATE TABLE IF NOT EXISTS thread_titles (
-        id TEXT PRIMARY KEY,
-        title TEXT
-      );
-    ''');
-  }
+  Future<void> prepare() async {}
 
   @override
   Future<void> saveApiToken(String token) async {
@@ -38,11 +31,7 @@ class LocalStorageRepository extends LocalStorageModel {
     ids.remove(id);
     await preferences.setStringList('threadIds', ids);
 
-    // Delete the thread title from SQLite
-    db.execute(
-      'DELETE FROM thread_titles WHERE id = ?',
-      [id],
-    );
+    await preferences.remove('thread_key_$id');
   }
 
   @override
@@ -133,25 +122,13 @@ class LocalStorageRepository extends LocalStorageModel {
   /// Uses sqlite3 to fetch the thread title.
   @override
   Future<String?> getThreadTitle(String id) async {
-    var result = db.select(
-      'SELECT title FROM thread_titles WHERE id = ?',
-      [id],
-    );
-
-    if (result.isNotEmpty) {
-      return result.first['title'] as String;
-    } else {
-      return null;
-    }
+    return preferences.getString('thread_key_$id');
   }
 
   /// Uses sqlite3 to save thread title.
   @override
   Future<void> saveThreadTitle(String id, String title) async {
-    db.execute(
-      'INSERT OR REPLACE INTO thread_titles (id, title) VALUES (?, ?)',
-      [id, title],
-    );
+    await preferences.setString('thread_key_$id', title);
   }
 
   /// Should produce a map of thread titles where the keys are the ids and the
@@ -163,17 +140,12 @@ class LocalStorageRepository extends LocalStorageModel {
   Future<Map<String, String>> getThreadsTitle(Iterable<String> ids) async {
     Map<String, String> titlesMap = {};
 
-    // Convert the Iterable into a comma-separated string for SQL IN clause
-    var placeholders = ids.map((_) => '?').join(',');
+    for (var id in ids) {
+      var title = preferences.getString('thread_key_$id');
 
-    var query =
-        'SELECT id, title FROM thread_titles WHERE id IN ($placeholders)';
-    var result = db.select(query, ids.toList());
-
-    for (var row in result) {
-      var id = row['id'] as String;
-      var title = row['title'] as String;
-      titlesMap[id] = title;
+      if (title != null) {
+        titlesMap[id] = title;
+      }
     }
 
     return titlesMap;

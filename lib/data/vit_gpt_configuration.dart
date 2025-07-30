@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 import 'package:logger/logger.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
@@ -14,11 +15,10 @@ class VitGptFlutterConfiguration {
 
   static var logger = Logger(
     printer: SimplePrinter(
-      colors: !Platform.isIOS,
+      colors: !kIsWeb && !Platform.isIOS,
     ),
     level: Level.debug,
   );
 
-  static Logger Function(List<String> tags) groupedLogsFactory =
-      createGroupedLogger;
+  static Logger Function(List<String> tags) groupedLogsFactory = createGroupedLogger;
 }
