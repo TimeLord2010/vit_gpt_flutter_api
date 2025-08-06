@@ -54,6 +54,8 @@ class ConversationProvider with ChangeNotifier {
     }
   }
 
+  DateTime? userSpeechEndTime;
+
   final scrollController = ScrollController();
 
   /// Indicates the UI is at the bottom of the list view.
@@ -97,8 +99,7 @@ class ConversationProvider with ChangeNotifier {
   ChatStatus get status => _status;
   set status(ChatStatus newStatus) {
     if (_status != newStatus) {
-      VitGptFlutterConfiguration.logger
-          .d('Changing chat status from ${_status.name} to ${newStatus.name}');
+      VitGptFlutterConfiguration.logger.d('Changing chat status from ${_status.name} to ${newStatus.name}');
     }
     _status = newStatus;
   }
@@ -164,13 +165,11 @@ class ConversationProvider with ChangeNotifier {
   Future<void> setup() async {
     var c = conversation;
     if (c == null) {
-      VitGptFlutterConfiguration.logger
-          .w('Aborting messages load: no original conversation');
+      VitGptFlutterConfiguration.logger.w('Aborting messages load: no original conversation');
       return;
     }
     if (c.messages.isNotEmpty) {
-      VitGptFlutterConfiguration.logger
-          .w('Aborting load messages: messages already found');
+      VitGptFlutterConfiguration.logger.w('Aborting load messages: messages already found');
       return;
     }
     var id = c.id;
@@ -340,8 +339,7 @@ class ConversationProvider with ChangeNotifier {
 
     var id = c?.id;
     if (id == null) {
-      VitGptFlutterConfiguration.logger
-          .w('Unabled to delete conversation without an id');
+      VitGptFlutterConfiguration.logger.w('Unabled to delete conversation without an id');
       return;
     }
 
@@ -382,16 +380,21 @@ class ConversationProvider with ChangeNotifier {
           this.status = status;
           notifyListeners();
         },
-        onTranscriptionEnd: (transcriptionEnd) async {
+        onSpeechEnd: (speechEnd) {
+          userSpeechEndTime = DateTime.now();
+        },
+        onTranscriptionEnd: (transcriptionEnd, audioBytes) async {
           var msg = Message(
             id: transcriptionEnd.id,
-            date: transcriptionEnd.createdAt ?? DateTime.now(),
+            date: userSpeechEndTime ?? DateTime.now(),
             role: transcriptionEnd.role,
             text: transcriptionEnd.content,
+            audio: audioBytes,
           );
           messages.add(msg);
 
           if (transcriptionEnd.role == Role.user) {
+            debugPrint('AUDIOO - onTranscriptionEnd ${msg.audio?.length}');
             var id = conversation?.id;
             if (id != null) {
               var rep = createThreadsRepository();
@@ -399,7 +402,7 @@ class ConversationProvider with ChangeNotifier {
             }
           }
         },
-        onResponse: (response) async {
+        onResponse: (response, audioBytes) async {
           var outputItem = response.output.firstWhereOrNull((x) {
             return x.role == Role.assistant;
           });
@@ -410,6 +413,7 @@ class ConversationProvider with ChangeNotifier {
           var msg = Message.assistant(
             message: text,
             usage: response.usage,
+            audio: audioBytes,
           );
           var id = conversation?.id;
           if (id != null) {

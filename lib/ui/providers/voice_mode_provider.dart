@@ -205,11 +205,11 @@ class VoiceModeProvider with VoiceModeContract {
   }
 
   @override
-  Future<void> stopVoiceMode() async {
+  Future<List<int>> stopVoiceMode() async {
     if (!isVoiceMode()) {
       _logger.w('Stopping voice mode aborted since voice mode is not active');
       notifyListeners();
-      return;
+      return [];
     }
     _logger.i('Stopping voice mode');
 
@@ -230,6 +230,8 @@ class VoiceModeProvider with VoiceModeContract {
 
     // Allow the screen to turn off again.
     await WakelockPlus.disable();
+
+    return [];
   }
 
   /// If the provider is listening to the microphone, it stops recording.

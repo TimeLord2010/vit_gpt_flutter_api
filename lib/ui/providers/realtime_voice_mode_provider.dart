@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
@@ -27,20 +28,25 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final Future<void> Function() onStart;
 
   /// Called when a transcription starts. Either from the user or the assistant.
-  final void Function(TranscriptionStart transcriptionStart)?
-      onTranscriptionStart;
+  final void Function(TranscriptionStart transcriptionStart)? onTranscriptionStart;
 
   final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
   final void Function(TranscriptionItem transcriptionItem)? onTranscription;
 
-  final void Function(TranscriptionEnd transcriptionEnd)? onTranscriptionEnd;
+  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)? onTranscriptionEnd;
 
-  final void Function(RealtimeResponse response)? onResponse;
+  final void Function(RealtimeResponse response, List<int>? audioBytes)? onResponse;
 
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
+
+  final List<int> leiaAudioBytesBeingRecorded = [];
+  final List<int> leiaAudioBytesWaitingTranscription = [];
+
+  final List<int> userAudioBytesBeingRecorded = [];
+  final List<int> userAudioBytesWaitingTranscription = [];
 
   RealtimeVoiceModeProvider({
     required void Function(ChatStatus status) setStatus,
@@ -136,7 +142,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.open();
 
     rep.onResponse.listen((response) async {
-      onResponse?.call(response);
+      onResponse?.call(response, leiaAudioBytesWaitingTranscription);
     });
 
     // Creating realtime audio player
@@ -165,7 +171,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     var onTranscriptionEnd = this.onTranscriptionEnd;
     if (onTranscriptionEnd != null) {
       rep.onTranscriptionEnd.listen((transcriptionEnd) {
-        onTranscriptionEnd(transcriptionEnd);
+
+        onTranscriptionEnd(transcriptionEnd, userAudioBytesWaitingTranscription);
       });
     }
 
@@ -180,6 +187,26 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       var role = speechStart.role;
       if (role == Role.assistant) {
         realtimePlayer?.resetBuffer();
+      }
+    });
+
+    rep.onSpeechEnd.listen((speechEnd) {
+      if (speechEnd.done) {
+        if (speechEnd.role == Role.user) {
+          userAudioBytesWaitingTranscription.clear();
+          userAudioBytesWaitingTranscription.addAll(userAudioBytesBeingRecorded);
+          userAudioBytesBeingRecorded.clear();
+          debugPrint('AUDIOO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}');
+        } else {
+          leiaAudioBytesWaitingTranscription.clear();
+          leiaAudioBytesWaitingTranscription.addAll(leiaAudioBytesBeingRecorded);
+          leiaAudioBytesBeingRecorded.clear();
+        }
+      }
+
+      var onSpeechEnd = this.onSpeechEnd;
+      if (onSpeechEnd != null) {
+        onSpeechEnd(speechEnd);
       }
     });
 
@@ -250,6 +277,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       realtimeModel?.sendUserAudio(bytes);
       var volume = getAudioIntensityFromPcm16(bytes);
       _audioVolumeStreamController.add(volume);
+
+      if (_oldStatus == ChatStatus.listeningToUser) {
+        userAudioBytesBeingRecorded.addAll(bytes);
+      }
     });
   }
 
@@ -269,9 +300,12 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   void _processAiBytes(data) {
     if (data is String) {
       realtimePlayer?.appendData(data);
+      Uint8List bytes = base64Decode(data);
+      leiaAudioBytesBeingRecorded.addAll(bytes);
     } else {
       Uint8List bytes = data;
       realtimePlayer?.appendBytes(bytes);
+      leiaAudioBytesBeingRecorded.addAll(bytes);
     }
   }
 }
