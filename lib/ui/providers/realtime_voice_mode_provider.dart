@@ -151,6 +151,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     realtimePlayer?.stopPlayStream.listen((_) {
       setStatus(ChatStatus.listeningToUser);
+      unmuteMic();
     });
 
     realtimePlayer?.volumeStream.listen((volume) {
@@ -180,6 +181,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       if (speech.role == Role.assistant) {
         setStatus(ChatStatus.speaking);
         _processAiBytes(speech.audioData);
+       muteMic();
       }
     });
 
@@ -201,6 +203,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
           leiaAudioBytesWaitingTranscription.clear();
           leiaAudioBytesWaitingTranscription.addAll(leiaAudioBytesBeingRecorded);
           leiaAudioBytesBeingRecorded.clear();
+          
         }
       }
 
@@ -287,6 +290,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   Future<void> muteMic() async {
     isPaused = true;
     await recorder.pause();
+    debugPrint('AUDIO MODE - MUTE');
   }
 
   Future<void> unmuteMic() async {
@@ -295,6 +299,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     }
     isPaused = false;
     await recorder.resume();
+    
+    debugPrint('AUDIO MODE - UNMUTE');
   }
 
   void _processAiBytes(data) {
