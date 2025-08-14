@@ -188,7 +188,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   }
 
   void _emitVolumeForPosition(Duration position) {
-    log.d('Checking volume at position $position');
+    //log.d('Checking volume at position $position');
     // Find the audio chunk that corresponds to the current playback position
     VolumeChunk? currentChunk;
     try {
@@ -205,7 +205,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       // Only emit if volume has changed significantly or enough time has passed
       var currentVol = currentChunk.volumeIntensity;
       if ((_lastEmittedVolume - currentVol).abs() > 0.01) {
-        log.i('Emitting volume chunk ${currentChunk.volumeIntensity}');
+        // log.i('Emitting volume chunk ${currentChunk.volumeIntensity}');
         _volumeStreamController.add(currentChunk.volumeIntensity);
         _lastEmittedVolume = currentChunk.volumeIntensity;
       }
