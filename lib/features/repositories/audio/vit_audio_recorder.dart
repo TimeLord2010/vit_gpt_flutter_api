@@ -8,6 +8,8 @@ import '../../usecases/audio/get_audio_intensity.dart';
 class VitAudioRecorder extends AudioRecorderModel {
   final _recorder = AudioRecorder();
 
+  bool _isRecording = false;
+
   @override
   Future<double> get amplitude async {
     var amp = await _recorder.getAmplitude();
@@ -39,20 +41,24 @@ class VitAudioRecorder extends AudioRecorderModel {
       path:
           '${VitGptDartConfiguration.internalFilesDirectory.path}/myInput.wav',
     );
+    _isRecording = true;
   }
 
   Future<Stream<Uint8List>> startStream() {
-    return _recorder.startStream(RecordConfig(
+    var stream = _recorder.startStream(RecordConfig(
       encoder: AudioEncoder.pcm16bits,
       sampleRate: 24000,
       echoCancel: true,
       numChannels: 1,
     ));
+    _isRecording = true;
+    return stream;
   }
 
   @override
   Future<String?> stop() async {
     var result = _recorder.stop();
+    _isRecording = false;
     return result;
   }
 
@@ -67,18 +73,21 @@ class VitAudioRecorder extends AudioRecorderModel {
     });
   }
 
-  Future<bool> isRecording() {
-    return _recorder.isRecording();
+  bool isRecording() {
+    return _isRecording;
+    //return _recorder.isRecording();
   }
 
   @override
   Future<void> pause() async {
+    _isRecording = false;
     await _recorder.pause();
   }
 
   @override
   Future<void> resume() async {
     await _recorder.resume();
+    _isRecording = true;
   }
 }
 
@@ -89,6 +98,5 @@ double _calcFromAmp(Amplitude amp) {
     maximum: -5,
     minimum: -70,
   );
-  // logger.debug('Audio intensity ($current): $value');
   return value;
 }

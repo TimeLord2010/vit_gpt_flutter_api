@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:logger/logger.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
@@ -211,19 +212,28 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     }
   }
 
-  void _handleAudioFinished() {
+  Future<void> _handleAudioFinished() async {
     log.d('Realtime audio player has stopped playing');
-    _bufferMonitor?.cancel();
+    try {
+      _bufferMonitor?.cancel();
+    } catch (_) {}
     _soundHandle = null;
-    _stopStream.add(null);
 
     // Reset manual position tracking
     _playbackStartTime = null;
     _manualPositionOffset = Duration.zero;
 
     // Emit zero volume when playback stops
-    _volumeStreamController.add(0.0);
+    try {
+      _volumeStreamController.add(0.0);
+    } catch (_) {}
     _lastEmittedVolume = 0.0;
+
+    /// For some reason, this even triggers too early on some platforms.
+    if (kIsWeb || Platform.isAndroid) {
+      await Future.delayed(Duration(seconds: 1, milliseconds: 500));
+    }
+    _stopStream.add(null);
   }
 
   @override

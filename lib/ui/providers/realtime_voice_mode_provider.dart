@@ -28,22 +28,25 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final Future<void> Function() onStart;
 
   /// Called when a transcription starts. Either from the user or the assistant.
-  final void Function(TranscriptionStart transcriptionStart)? onTranscriptionStart;
+  final void Function(TranscriptionStart transcriptionStart)?
+      onTranscriptionStart;
 
   final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
   final void Function(TranscriptionItem transcriptionItem)? onTranscription;
 
-  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)? onTranscriptionEnd;
+  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)?
+      onTranscriptionEnd;
 
-  final void Function(RealtimeResponse response, List<int>? audioBytes)? onResponse;
+  final void Function(RealtimeResponse response, List<int>? audioBytes)?
+      onResponse;
 
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
 
-  final List<int> leiaAudioBytesBeingRecorded = [];
-  final List<int> leiaAudioBytesWaitingTranscription = [];
+  final List<int> aiAudioBytesBeingRecorded = [];
+  final List<int> aiAudioBytesWaitingTranscription = [];
 
   final List<int> userAudioBytesBeingRecorded = [];
   final List<int> userAudioBytesWaitingTranscription = [];
@@ -101,8 +104,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   Future<void> dispose() async {
     await _tearDownPlayer();
 
-    var isRecording = await recorder.isRecording();
-    if (isRecording) recorder.stop();
+    try {
+      recorder.stop();
+    } catch (_) {}
 
     _audioVolumeStreamController.close();
   }
@@ -142,7 +146,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.open();
 
     rep.onResponse.listen((response) async {
-      onResponse?.call(response, leiaAudioBytesWaitingTranscription);
+      onResponse?.call(response, aiAudioBytesWaitingTranscription);
     });
 
     // Creating realtime audio player
@@ -172,8 +176,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     var onTranscriptionEnd = this.onTranscriptionEnd;
     if (onTranscriptionEnd != null) {
       rep.onTranscriptionEnd.listen((transcriptionEnd) {
-
-        onTranscriptionEnd(transcriptionEnd, userAudioBytesWaitingTranscription);
+        onTranscriptionEnd(
+            transcriptionEnd, userAudioBytesWaitingTranscription);
       });
     }
 
@@ -181,7 +185,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       if (speech.role == Role.assistant) {
         setStatus(ChatStatus.speaking);
         _processAiBytes(speech.audioData);
-       muteMic();
+        muteMic();
       }
     });
 
@@ -196,14 +200,15 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       if (speechEnd.done) {
         if (speechEnd.role == Role.user) {
           userAudioBytesWaitingTranscription.clear();
-          userAudioBytesWaitingTranscription.addAll(userAudioBytesBeingRecorded);
+          userAudioBytesWaitingTranscription
+              .addAll(userAudioBytesBeingRecorded);
           userAudioBytesBeingRecorded.clear();
-          debugPrint('AUDIOO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}');
+          debugPrint(
+              'AUDIO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}');
         } else {
-          leiaAudioBytesWaitingTranscription.clear();
-          leiaAudioBytesWaitingTranscription.addAll(leiaAudioBytesBeingRecorded);
-          leiaAudioBytesBeingRecorded.clear();
-          
+          aiAudioBytesWaitingTranscription.clear();
+          aiAudioBytesWaitingTranscription.addAll(aiAudioBytesBeingRecorded);
+          aiAudioBytesBeingRecorded.clear();
         }
       }
 
@@ -277,6 +282,12 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     setStatus(ChatStatus.listeningToUser);
 
     userAudioStream.listen((bytes) {
+      /// This exists because the library "record" does not mute the microphone
+      /// when on web platform.
+      if (!recorder.isRecording()) {
+        return;
+      }
+
       realtimeModel?.sendUserAudio(bytes);
       var volume = getAudioIntensityFromPcm16(bytes);
       _audioVolumeStreamController.add(volume);
@@ -299,7 +310,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     }
     isPaused = false;
     await recorder.resume();
-    
+
     debugPrint('AUDIO MODE - UNMUTE');
   }
 
@@ -307,11 +318,11 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     if (data is String) {
       realtimePlayer?.appendData(data);
       Uint8List bytes = base64Decode(data);
-      leiaAudioBytesBeingRecorded.addAll(bytes);
+      aiAudioBytesBeingRecorded.addAll(bytes);
     } else {
       Uint8List bytes = data;
       realtimePlayer?.appendBytes(bytes);
-      leiaAudioBytesBeingRecorded.addAll(bytes);
+      aiAudioBytesBeingRecorded.addAll(bytes);
     }
   }
 }
