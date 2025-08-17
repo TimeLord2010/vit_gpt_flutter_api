@@ -105,7 +105,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     await _tearDownPlayer();
 
     try {
-      recorder.stop();
+      await recorder.stop();
+      await recorder.dispose();
     } catch (_) {}
 
     _audioVolumeStreamController.close();

@@ -17,9 +17,7 @@ class VitAudioRecorder extends AudioRecorderModel {
   }
 
   @override
-  Future<void> dispose() async {
-    await _recorder.dispose();
-  }
+  Future<void> dispose() async => await _recorder.dispose();
 
   @override
   Stream<double> onAmplitude([Duration? duration]) {
