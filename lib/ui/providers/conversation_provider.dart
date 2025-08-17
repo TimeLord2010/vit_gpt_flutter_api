@@ -99,7 +99,8 @@ class ConversationProvider with ChangeNotifier {
   ChatStatus get status => _status;
   set status(ChatStatus newStatus) {
     if (_status != newStatus) {
-      VitGptFlutterConfiguration.logger.d('Changing chat status from ${_status.name} to ${newStatus.name}');
+      VitGptFlutterConfiguration.logger
+          .d('Changing chat status from ${_status.name} to ${newStatus.name}');
     }
     _status = newStatus;
   }
@@ -155,7 +156,7 @@ class ConversationProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    //voiceModeProvider.dispose();
+    voiceModeProvider.dispose();
     super.dispose();
   }
 
@@ -165,11 +166,13 @@ class ConversationProvider with ChangeNotifier {
   Future<void> setup() async {
     var c = conversation;
     if (c == null) {
-      VitGptFlutterConfiguration.logger.w('Aborting messages load: no original conversation');
+      VitGptFlutterConfiguration.logger
+          .w('Aborting messages load: no original conversation');
       return;
     }
     if (c.messages.isNotEmpty) {
-      VitGptFlutterConfiguration.logger.w('Aborting load messages: messages already found');
+      VitGptFlutterConfiguration.logger
+          .w('Aborting load messages: messages already found');
       return;
     }
     var id = c.id;
@@ -339,7 +342,8 @@ class ConversationProvider with ChangeNotifier {
 
     var id = c?.id;
     if (id == null) {
-      VitGptFlutterConfiguration.logger.w('Unabled to delete conversation without an id');
+      VitGptFlutterConfiguration.logger
+          .w('Unabled to delete conversation without an id');
       return;
     }
 
