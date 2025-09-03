@@ -9,11 +9,14 @@ import 'package:vit_gpt_dart_api/factories/http_client.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
+import 'package:vit_gpt_flutter_api/factories/create_grouped_logger.dart';
 import 'package:vit_gpt_flutter_api/ui/providers/realtime_voice_mode_provider.dart';
 
 import '../../data/enums/chat_status.dart';
 import '../../features/usecases/get_error_message.dart';
 import 'voice_mode_provider.dart';
+
+var _logger = createGroupedLogger(['ConversationProvider']);
 
 class ConversationProvider with ChangeNotifier {
   final BuildContext context;
@@ -397,13 +400,20 @@ class ConversationProvider with ChangeNotifier {
           );
           messages.add(msg);
 
+          var id = conversation?.id;
+          if (id == null) {
+            _logger
+                .e('Unable to create message due to missing conversation id');
+            return;
+          }
+
+          // We could also add assistant messages here. But we dont receive the
+          // "usage" object here.
           if (transcriptionEnd.role == Role.user) {
-            debugPrint('AUDIOO - onTranscriptionEnd ${msg.audio?.length}');
-            var id = conversation?.id;
-            if (id != null) {
-              var rep = createThreadsRepository();
-              await rep.createMessage(id, msg);
-            }
+            _logger
+                .d('Adding message using transcription end: $transcriptionEnd');
+            var rep = createThreadsRepository();
+            await rep.createMessage(id, msg);
           }
         },
         onResponse: (response, audioBytes) async {
@@ -412,7 +422,11 @@ class ConversationProvider with ChangeNotifier {
           });
           var content = outputItem?.content.single;
           var text = content?.text ?? content?.transcript;
-          if (text == null) return;
+          if (text == null) {
+            _logger.w(
+                'Aborting reading assistant message because no text was found.');
+            return;
+          }
 
           var msg = Message.assistant(
             message: text,
