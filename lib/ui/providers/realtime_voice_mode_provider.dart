@@ -155,6 +155,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     realtimePlayer?.resetBuffer();
 
     realtimePlayer?.stopPlayStream.listen((_) {
+      _logger.d('AI finished speaking');
       setStatus(ChatStatus.listeningToUser);
       unmuteMic();
     });
