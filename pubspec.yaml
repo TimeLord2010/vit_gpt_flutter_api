@@ -2,6 +2,7 @@ name: vit_gpt_flutter_api
 description: "Collection of classes to save and connect to open ai resources"
 version: 1.10.1
 repository: https://github.com/TimeLord2010/vit_gpt_flutter_api
+publish_to: none
 
 environment:
   sdk: ^3.5.4
@@ -31,7 +32,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-flutter:
+# flutter:
 
   # To add assets to your package, add an assets section, like this:
   # assets:

@@ -2,8 +2,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 
 class LocalStorageRepository extends LocalStorageModel {
-  
-  @override
   final SharedPreferences preferences;
 
   LocalStorageRepository(this.preferences);

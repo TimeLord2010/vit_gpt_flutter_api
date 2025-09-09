@@ -222,7 +222,20 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     rep.onConnectionOpen.listen((_) {
       _isLoadingVoiceMode = false;
-      _startRecording();
+      if (rep.isSendingInitialMessages) {
+        _logger.i(
+            'Connection is open but the system is receving initial messages. Wating until all messages are received');
+        var sub = rep.onIsSendingInitialMessages.listen(null);
+        sub.onData((isSending) async {
+          _logger.i('Updated is sending initial message: $isSending');
+          if (!isSending) {
+            _startRecording();
+            await sub.cancel();
+          }
+        });
+      } else {
+        _startRecording();
+      }
     });
 
     rep.onConnectionClose.listen((_) {
