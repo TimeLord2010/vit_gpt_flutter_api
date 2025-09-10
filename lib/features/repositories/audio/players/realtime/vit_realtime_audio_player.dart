@@ -8,6 +8,7 @@ import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/volume_smoother.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity_from_pcm_16.dart';
+import 'audio_routing.dart';
 
 class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   final _player = SoLoud.instance;
@@ -239,6 +240,10 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Future<void> createBufferStream() async {
     var c = _setupCompleter = Completer();
+    
+    // Configure audio routing for speaker output (web only)
+    AudioRouting.configureForSpeakerOutput();
+    
     if (!_player.isInitialized) {
       await _player.init(
         automaticCleanup: true,
@@ -275,6 +280,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _stopStream.close();
     _volumeStreamController.close();
     _volumeChunks.clear();
+    AudioRouting.cleanup();
   }
 
   @override
