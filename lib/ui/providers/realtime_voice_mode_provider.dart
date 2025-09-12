@@ -321,11 +321,11 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   Future<void> unmuteMic() async {
     if (!isPaused) {
+      debugPrint('Aborting unmute since it is not paused');
       return;
     }
     isPaused = false;
     await recorder.resume();
-
     debugPrint('AUDIO MODE - UNMUTE');
   }
 
