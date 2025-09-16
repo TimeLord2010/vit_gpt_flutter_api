@@ -78,7 +78,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   // Helper variable for [isInVoiceMode].
   bool _isVoiceMode = false;
 
-  bool isPaused = false;
+  bool isMicEnabled = false;
 
   final _audioVolumeStreamController = StreamController<double>.broadcast();
 
@@ -314,17 +314,17 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   Future<void> muteMic() async {
-    isPaused = true;
+    isMicEnabled = true;
     await recorder.pause();
     debugPrint('AUDIO MODE - MUTE');
   }
 
   Future<void> unmuteMic() async {
-    if (!isPaused) {
+    if (!isMicEnabled) {
       debugPrint('Aborting unmute since it is not paused');
       return;
     }
-    isPaused = false;
+    isMicEnabled = false;
     await recorder.resume();
     debugPrint('AUDIO MODE - UNMUTE');
   }
