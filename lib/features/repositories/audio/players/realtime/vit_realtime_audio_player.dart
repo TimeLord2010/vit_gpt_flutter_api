@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
@@ -8,6 +7,7 @@ import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/volume_smoother.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity_from_pcm_16.dart';
+
 import 'audio_routing.dart';
 
 class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
@@ -73,7 +73,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _totalDuration += chunkDuration;
 
     // Clean up old chunks to prevent memory buildup (keep last 10 seconds)
-    _cleanupOldChunks();
+    _cleanupOldVolumeChunks();
 
     _player.addAudioDataStream(_source!, audioData);
 
@@ -142,7 +142,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     }
   }
 
-  void _cleanupOldChunks() {
+  void _cleanupOldVolumeChunks() {
     if (!_isPlaying) return;
 
     final currentPos = currentPosition;
@@ -170,19 +170,17 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
         return;
       }
 
-      final bufferSize = _player.getBufferSize(_source!);
-      final currentPos = currentPosition;
-      final now = DateTime.now();
-
       // Emit volume for current position using manual tracking
+      final currentPos = currentPosition;
       _emitVolumeForPosition(currentPos);
 
-      // Check for end of playback
+      // Check for end of playback to emit audio stop
+      final bufferSize = _player.getBufferSize(_source!);
       if (bufferSize == 0 && _lastDataReceived != null) {
+        final now = DateTime.now();
         final timeSinceLastData = now.difference(_lastDataReceived!);
-        if (timeSinceLastData.inMilliseconds > 200) {
-          _handleAudioFinished();
-          timer.cancel();
+        if (timeSinceLastData.inMilliseconds > 2500) {
+          handleAudioFinished();
         }
       }
     });
@@ -213,11 +211,12 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     }
   }
 
-  Future<void> _handleAudioFinished() async {
+  Future<void> handleAudioFinished() async {
     log.d('Realtime audio player has stopped playing');
     try {
       _bufferMonitor?.cancel();
     } catch (_) {}
+    _bufferMonitor = null;
     _soundHandle = null;
 
     // Reset manual position tracking
@@ -230,20 +229,20 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     } catch (_) {}
     _lastEmittedVolume = 0.0;
 
-    /// For some reason, this even triggers too early on some platforms.
-    if (kIsWeb || Platform.isAndroid) {
-      await Future.delayed(Duration(seconds: 1, milliseconds: 500));
-    }
+    // /// For some reason, this even triggers too early on some platforms.
+    // if (kIsWeb || Platform.isAndroid) {
+    //   await Future.delayed(Duration(seconds: 1, milliseconds: 500));
+    // }
     _stopStream.add(null);
   }
 
   @override
   Future<void> createBufferStream() async {
     var c = _setupCompleter = Completer();
-    
+
     // Configure audio routing for speaker output (web only)
     AudioRouting.configureForSpeakerOutput();
-    
+
     if (!_player.isInitialized) {
       await _player.init(
         automaticCleanup: true,
