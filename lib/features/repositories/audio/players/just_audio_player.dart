@@ -64,6 +64,12 @@ class JustAudioPlayer extends api.SimpleAudioPlayer {
   }
 
   @override
+  Future<void> seekTo(Duration position) {
+    // TODO: implement seekTo
+    throw UnimplementedError();
+  }
+
+  @override
   double get positionInSeconds => player.position.inMilliseconds / 1000;
 
   @override

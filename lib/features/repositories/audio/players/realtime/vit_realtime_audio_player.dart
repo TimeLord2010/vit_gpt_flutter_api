@@ -46,8 +46,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     if (_playbackStartTime == null || !_isPlaying) {
       return Duration.zero;
     }
-    return DateTime.now().difference(_playbackStartTime!) +
-        _manualPositionOffset;
+    return DateTime.now().difference(_playbackStartTime!) + _manualPositionOffset;
   }
 
   @override
@@ -101,8 +100,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     // Split the chunk into smaller segments based on granularity
     final bytesPerSample = 2; // 16-bit = 2 bytes per sample
     final sampleRate = 24000; // 24kHz
-    final samplesPerGranularity =
-        (_volumeGranularity.inMicroseconds * sampleRate) ~/ 1000000;
+    final samplesPerGranularity = (_volumeGranularity.inMicroseconds * sampleRate) ~/ 1000000;
     final bytesPerGranularity = samplesPerGranularity * bytesPerSample;
 
     Duration currentTime = _totalDuration;
@@ -148,8 +146,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     final currentPos = currentPosition;
     final cutoffTime = currentPos - Duration(seconds: 60);
 
-    var itemsToRemove =
-        _volumeChunks.where((chunk) => chunk.endTime < cutoffTime);
+    var itemsToRemove = _volumeChunks.where((chunk) => chunk.endTime < cutoffTime);
     if (itemsToRemove.isNotEmpty) {
       log.w('Removing ${itemsToRemove.length} items from volume list');
     }
@@ -240,10 +237,10 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Future<void> createBufferStream() async {
     var c = _setupCompleter = Completer();
-    
+
     // Configure audio routing for speaker output (web only)
     AudioRouting.configureForSpeakerOutput();
-    
+
     if (!_player.isInitialized) {
       await _player.init(
         automaticCleanup: true,
