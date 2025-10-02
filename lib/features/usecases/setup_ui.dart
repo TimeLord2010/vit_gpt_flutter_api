@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
-import 'package:logger/web.dart';
+import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
-import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
+import 'package:vit_gpt_flutter_api/factories/create_grouped_logger.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/players/vit_audio_player.dart';
 
 import '../repositories/audio/vit_audio_recorder.dart';
@@ -17,11 +17,25 @@ Future<void> setupUI({
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb && Platform.isIOS) {
-    VitGptFlutterConfiguration.logger.d('Disabling colors on logs since we are in IOS');
-    VitGptDartConfiguration.logger = Logger(
-      printer: SimplePrinter(colors: false),
-    );
+  if (!kIsWeb) {
+    // TODO: REMOVE IO specific code ON WEB BUILDS
+    var dtKey = DateTime.now().toIso8601String().split('T')[0];
+    var file = File('./logs/${dtKey}_gptdart.txt');
+
+    await file.create(recursive: true);
+    DynamicFactories.logger = (tag) {
+      return Logger(
+        output: MultiOutput([
+          ConsoleOutput(),
+          FileOutput(file: file),
+        ]),
+        printer: GptFlutterLogGroup(
+          tags: ['VitGptDart', if (tag != null) tag],
+          appendFlutterApiPrefix: false,
+        ),
+        filter: GptFlutterLogFilter(),
+      );
+    };
   }
 
   var sp = await SharedPreferences.getInstance();

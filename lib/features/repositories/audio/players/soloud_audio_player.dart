@@ -97,4 +97,10 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
   Stream<double>? getVolumeIntensity() {
     return null;
   }
+
+  @override
+  Future<void> seekTo(Duration position) {
+    // TODO: implement seekTo
+    throw UnimplementedError();
+  }
 }

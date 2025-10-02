@@ -205,7 +205,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
         (chunk) => position >= chunk.startTime && position < chunk.endTime,
       );
     } catch (e) {
-      _logger.w('Volume chunk at position not found. Defaulting to last value');
+      // _logger.w('Volume chunk at position not found. Defaulting to last value');
       // If no exact match found, use the last chunk if available
       currentChunk = _volumeChunks.isNotEmpty ? _volumeChunks.last : null;
     }

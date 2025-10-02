@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 
@@ -19,7 +20,7 @@ class GptFlutterLogGroup extends LogPrinter {
     var prefix = [
       if (appendFlutterApiPrefix) 'VitGptFlutter',
       ...tags,
-    ].join(separator);
+    ].where((x) => x.isNotEmpty).join(separator);
     var msg = event.message;
     var error = event.error;
 
@@ -28,6 +29,13 @@ class GptFlutterLogGroup extends LogPrinter {
       if (error != null) getErrorMessage(error) ?? '...',
     ];
   }
+}
+
+class GptFlutterLogFilter extends LogFilter {
+  GptFlutterLogFilter();
+
+  @override
+  bool shouldLog(LogEvent event) => !kReleaseMode;
 }
 
 Logger createGptFlutterLogger(
@@ -39,5 +47,6 @@ Logger createGptFlutterLogger(
       tags: tags,
       appendFlutterApiPrefix: appendFlutterApiPrefix,
     ),
+    filter: GptFlutterLogFilter(),
   );
 }
