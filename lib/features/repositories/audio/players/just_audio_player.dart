@@ -96,10 +96,4 @@ class JustAudioPlayer extends api.SimpleAudioPlayer {
     }
     return _volumeStreamController.stream;
   }
-
-  @override
-  Future<void> seekTo(Duration position) {
-    // TODO: implement seekTo
-    throw UnimplementedError();
-  }
 }
