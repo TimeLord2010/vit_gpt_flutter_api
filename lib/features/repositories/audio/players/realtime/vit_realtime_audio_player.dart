@@ -26,6 +26,8 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
   bool _isPlaying = false;
   AudioSource? _source;
+
+  /// Used for the "play" method.
   SoundHandle? _soundHandle;
   Completer? _setupCompleter;
   Timer? _bufferMonitor;
@@ -186,11 +188,17 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
       // Check for end of playback to emit audio stop
       final bufferSize = _player.getBufferSize(_source!);
+      _logger.d('Buffer size: $bufferSize');
       if (bufferSize == 0 && _lastDataReceived != null) {
+        // _logger.d(
+        //     'Last data received date: ${_lastDataReceived!.toIso8601String()}');
         final now = DateTime.now();
         final timeSinceLastData = now.difference(_lastDataReceived!);
-        if (timeSinceLastData.inMilliseconds > 5000) {
-          handleAudioFinished();
+        if (timeSinceLastData.inSeconds > 10) {
+          timer.cancel();
+          Future.delayed(Duration(seconds: 2), () {
+            handleAudioFinished();
+          });
         }
       }
     });

@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 
+import '../features/usecases/setup_ui_stub.dart'
+    if (dart.library.io) '../features/usecases/setup_ui_io.dart';
+
 class GptFlutterLogGroup extends LogPrinter {
   final List<String> tags;
   final String separator;
@@ -38,11 +41,21 @@ class GptFlutterLogFilter extends LogFilter {
   bool shouldLog(LogEvent event) => !kReleaseMode;
 }
 
+List<LogOutput>? _outputsCache;
+
+Future<void> initializeLogOutputs() async {
+  _outputsCache ??= await getPlatformSpecificOutputs(tag: 'gptflutter');
+}
+
 Logger createGptFlutterLogger(
   List<String> tags, {
   bool appendFlutterApiPrefix = true,
 }) {
+  assert(_outputsCache != null,
+      'Call initializeLogOutputs() before creating loggers');
+
   return Logger(
+    output: MultiOutput(_outputsCache!),
     printer: GptFlutterLogGroup(
       tags: tags,
       appendFlutterApiPrefix: appendFlutterApiPrefix,

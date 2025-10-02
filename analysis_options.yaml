@@ -2,3 +2,8 @@ include: package:flutter_lints/flutter.yaml
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+linter:
+  rules:
+    avoid_unused_constructor_parameters: true
+    always_put_required_named_parameters_first: true
+    use_function_type_syntax_for_parameters: true

@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
@@ -11,32 +8,27 @@ import 'package:vit_gpt_flutter_api/features/repositories/audio/players/vit_audi
 
 import '../repositories/audio/vit_audio_recorder.dart';
 import '../repositories/local_storage_repository.dart';
+import 'setup_ui_stub.dart' if (dart.library.io) 'setup_ui_io.dart';
 
 Future<void> setupUI({
   String? openAiKey,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb) {
-    // TODO: REMOVE IO specific code ON WEB BUILDS
-    var dtKey = DateTime.now().toIso8601String().split('T')[0];
-    var file = File('./logs/${dtKey}_gptdart.txt');
+  await initializeLogOutputs();
 
-    await file.create(recursive: true);
-    DynamicFactories.logger = (tag) {
-      return Logger(
-        output: MultiOutput([
-          ConsoleOutput(),
-          FileOutput(file: file),
-        ]),
-        printer: GptFlutterLogGroup(
-          tags: ['VitGptDart', if (tag != null) tag],
-          appendFlutterApiPrefix: false,
-        ),
-        filter: GptFlutterLogFilter(),
-      );
-    };
-  }
+  List<LogOutput> outputs = await getPlatformSpecificOutputs(tag: 'gptdart');
+
+  DynamicFactories.logger = (tag) {
+    return Logger(
+      output: MultiOutput(outputs),
+      printer: GptFlutterLogGroup(
+        tags: ['VitGptDart', if (tag != null) tag],
+        appendFlutterApiPrefix: false,
+      ),
+      filter: GptFlutterLogFilter(),
+    );
+  };
 
   var sp = await SharedPreferences.getInstance();
   GetIt.I.registerSingleton(sp);
