@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
-import 'package:logger/logger.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
-import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
+import 'package:vit_gpt_flutter_api/factories/create_grouped_logger.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/volume_smoother.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity_from_pcm_16.dart';
 
 import 'audio_routing.dart';
+
+var _logger = createGptFlutterLogger(['VitRealtimeAudioPlayer']);
 
 class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   final _player = SoLoud.instance;
@@ -24,10 +25,12 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
   bool _isPlaying = false;
   AudioSource? _source;
+
+  /// Used for the "play" method.
   SoundHandle? _soundHandle;
   Completer? _setupCompleter;
   Timer? _bufferMonitor;
-  DateTime? _lastDataReceived;
+  bool _streamCompleted = false;
 
   // Manual position tracking for streams
   DateTime? _playbackStartTime;
@@ -37,8 +40,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   final List<VolumeChunk> _volumeChunks = [];
   Duration _totalDuration = Duration.zero;
   double _lastEmittedVolume = 0.0;
-
-  Logger get log => VitGptFlutterConfiguration.logger;
 
   /// Get current playback position using manual tracking instead of SoLoud's getPosition
   /// which doesn't work reliably with streams
@@ -58,7 +59,8 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Future<void> appendBytes(Uint8List audioData) async {
     await _setupCompleter?.future;
-    _lastDataReceived = DateTime.now();
+    var now = DateTime.now();
+    _logger.d('Received audio data on $now');
 
     // Calculate chunk duration (assuming 24kHz, mono, 16-bit)
     final sampleCount = audioData.length ~/ 2; // 16-bit = 2 bytes per sample
@@ -71,7 +73,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
     _totalDuration += chunkDuration;
 
-    // Clean up old chunks to prevent memory buildup (keep last 10 seconds)
     _cleanupOldVolumeChunks();
 
     _player.addAudioDataStream(_source!, audioData);
@@ -87,7 +88,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     // If the chunk duration is less than or equal to granularity, create a single chunk
     if (chunkDuration <= _volumeGranularity) {
       final volumeIntensity = _getVolume(audioData);
-      log.d('Generated volume: $volumeIntensity');
+      // _logger.d('Generated volume: $volumeIntensity');
       final chunk = VolumeChunk(
         volumeIntensity: volumeIntensity,
         startTime: _totalDuration,
@@ -148,7 +149,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
     var itemsToRemove = _volumeChunks.where((chunk) => chunk.endTime < cutoffTime);
     if (itemsToRemove.isNotEmpty) {
-      log.w('Removing ${itemsToRemove.length} items from volume list');
+      _logger.w('Removing ${itemsToRemove.length} items from volume list');
     }
     for (var item in itemsToRemove) {
       _volumeChunks.remove(item);
@@ -161,9 +162,9 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     // Initialize playback start time for manual position tracking
     _playbackStartTime = DateTime.now();
 
-    _bufferMonitor = Timer.periodic(Duration(milliseconds: 50), (timer) {
+    _bufferMonitor = Timer.periodic(Duration(milliseconds: 50), (timer) async {
       if (_source == null || !_isPlaying || _soundHandle == null) {
-        log.w('Invalid configuration for timer');
+        _logger.w('Invalid configuration for timer');
         return;
       }
 
@@ -171,20 +172,21 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       final currentPos = currentPosition;
       _emitVolumeForPosition(currentPos);
 
-      // Check for end of playback to emit audio stop
+      // Check for end of playback when stream is completed
       final bufferSize = _player.getBufferSize(_source!);
-      if (bufferSize == 0 && _lastDataReceived != null) {
-        final now = DateTime.now();
-        final timeSinceLastData = now.difference(_lastDataReceived!);
-        if (timeSinceLastData.inMilliseconds > 2500) {
+      _logger.d('Buffer size: $bufferSize');
+      if (bufferSize == 0 && _streamCompleted) {
+        _logger.d('Buffer empty and stream completed - finishing playback');
+        timer.cancel();
+        await Future.delayed(Duration(milliseconds: 500), () {
           handleAudioFinished();
-        }
+        });
       }
     });
   }
 
   void _emitVolumeForPosition(Duration position) {
-    //log.d('Checking volume at position $position');
+    //_logger.d('Checking volume at position $position');
     // Find the audio chunk that corresponds to the current playback position
     VolumeChunk? currentChunk;
     try {
@@ -192,7 +194,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
         (chunk) => position >= chunk.startTime && position < chunk.endTime,
       );
     } catch (e) {
-      log.w('Volume chunk at position not found. Defaulting to last value');
+      // _logger.w('Volume chunk at position not found. Defaulting to last value');
       // If no exact match found, use the last chunk if available
       currentChunk = _volumeChunks.isNotEmpty ? _volumeChunks.last : null;
     }
@@ -209,7 +211,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   }
 
   Future<void> handleAudioFinished() async {
-    log.d('Realtime audio player has stopped playing');
+    _logger.d('Realtime audio player has stopped playing');
     try {
       _bufferMonitor?.cancel();
     } catch (_) {}
@@ -234,7 +236,15 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   }
 
   @override
+  void completeStream() {
+    _logger.i('Stream completed - no more audio data will be received');
+    _player.setDataIsEnded(_source!);
+    _streamCompleted = true;
+  }
+
+  @override
   Future<void> createBufferStream() async {
+    _logger.i('Create buffer stream');
     var c = _setupCompleter = Completer();
 
     // Configure audio routing for speaker output (web only)
@@ -261,6 +271,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _volumeChunks.clear();
     _totalDuration = Duration.zero;
     _lastEmittedVolume = 0.0;
+    _streamCompleted = false;
 
     // Reset manual position tracking
     _playbackStartTime = null;

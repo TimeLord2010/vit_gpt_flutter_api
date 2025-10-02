@@ -12,7 +12,7 @@ import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/enums/chat_status.dart';
-import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
+import 'package:vit_gpt_flutter_api/factories/create_grouped_logger.dart';
 import 'package:vit_gpt_flutter_api/factories/create_realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/vit_audio_recorder.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity_from_pcm_16.dart';
@@ -64,9 +64,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   // MARK: Variables
 
-  final Logger _logger = VitGptFlutterConfiguration.groupedLogsFactory([
-    'RealtimeVoiceModeProvider',
-  ]);
+  final Logger _logger = createGptFlutterLogger(['RealtimeVoiceModeProvider']);
 
   // Reference to the audio recorder used to record the user voice.
   final recorder = VitAudioRecorder();
@@ -86,6 +84,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   ChatStatus? _oldStatus;
 
   bool _isLoadingVoiceMode = false;
+
+  // Tracks whether AI has finished speaking to prevent race conditions
+  bool _aiHasFinishedSpeaking = true;
 
   // MARK: Properties
 
@@ -156,6 +157,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     realtimePlayer?.stopPlayStream.listen((_) {
       _logger.d('AI finished speaking');
+      _aiHasFinishedSpeaking = true;
       setStatus(ChatStatus.listeningToUser);
       unmuteMic();
     });
@@ -183,17 +185,27 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       });
     }
 
-    rep.onSpeech.listen((speech) {
+    rep.onSpeech.listen((speech) async {
       if (speech.role == Role.assistant) {
-        setStatus(ChatStatus.speaking);
+        /// When using websocket, its ideal to index values because there is
+        /// no way to ensure their order. But We can't use `speech.contentIndex`
+        /// because its value will always be 0 🙄, so we have no option but to
+        /// trust simply in the order we receive the data.
         _processAiBytes(speech.audioData);
-        muteMic();
+
+        // Only change status to speaking if AI hasn't already finished
+        // This prevents late-arriving events from changing status after player stopped
+        if (!_aiHasFinishedSpeaking) {
+          setStatus(ChatStatus.speaking);
+          muteMic();
+        }
       }
     });
 
     rep.onSpeechStart.listen((speechStart) {
       var role = speechStart.role;
       if (role == Role.assistant) {
+        _aiHasFinishedSpeaking = false;
         realtimePlayer?.resetBuffer();
       }
     });
@@ -208,6 +220,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
           debugPrint(
               'AUDIO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}');
         } else {
+          // AI speech has ended - signal no more audio data coming
+          realtimePlayer?.completeStream();
           aiAudioBytesWaitingTranscription.clear();
           aiAudioBytesWaitingTranscription.addAll(aiAudioBytesBeingRecorded);
           aiAudioBytesBeingRecorded.clear();

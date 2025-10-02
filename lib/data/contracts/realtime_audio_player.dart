@@ -19,6 +19,11 @@ mixin RealtimeAudioPlayer {
 
   void appendBytes(Uint8List audioData);
 
+  /// Signals that no more audio data will be sent to the stream.
+  /// Call this method when the audio stream has ended to properly
+  /// finish playback without relying on timeout-based detection.
+  void completeStream();
+
   void dispose();
 
   void appendData(String base64Data) {
