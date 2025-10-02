@@ -4,14 +4,14 @@ import 'package:logger/logger.dart';
 import 'package:vit_gpt_dart_api/vit_gpt_dart_api.dart';
 import 'package:vit_gpt_flutter_api/data/contracts/voice_mode_contract.dart';
 import 'package:vit_gpt_flutter_api/data/vit_gpt_configuration.dart';
+import 'package:vit_gpt_flutter_api/factories/create_grouped_logger.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/enums/chat_status.dart';
 import '../../features/usecases/get_error_message.dart';
 
 class VoiceModeProvider with VoiceModeContract {
-  final Logger _logger =
-      VitGptFlutterConfiguration.groupedLogsFactory(['VoiceModeProvider']);
+  final Logger _logger = createGptFlutterLogger(['VoiceModeProvider']);
 
   final void Function() notifyListeners;
   final bool Function() isVoiceMode;

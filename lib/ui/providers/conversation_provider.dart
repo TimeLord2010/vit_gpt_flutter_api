@@ -16,7 +16,7 @@ import '../../data/enums/chat_status.dart';
 import '../../features/usecases/get_error_message.dart';
 import 'voice_mode_provider.dart';
 
-var _logger = createGroupedLogger(['ConversationProvider']);
+var _logger = createGptFlutterLogger(['ConversationProvider']);
 
 class ConversationProvider with ChangeNotifier {
   final BuildContext context;
