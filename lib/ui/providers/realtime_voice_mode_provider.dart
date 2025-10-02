@@ -220,6 +220,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
           debugPrint(
               'AUDIO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}');
         } else {
+          // AI speech has ended - signal no more audio data coming
+          realtimePlayer?.completeStream();
           aiAudioBytesWaitingTranscription.clear();
           aiAudioBytesWaitingTranscription.addAll(aiAudioBytesBeingRecorded);
           aiAudioBytesBeingRecorded.clear();
