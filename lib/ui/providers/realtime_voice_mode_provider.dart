@@ -85,6 +85,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   bool _isLoadingVoiceMode = false;
 
+  // Tracks whether AI has finished speaking to prevent race conditions
+  bool _aiHasFinishedSpeaking = true;
+
   // MARK: Properties
 
   @override
@@ -154,6 +157,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     realtimePlayer?.stopPlayStream.listen((_) {
       _logger.d('AI finished speaking');
+      _aiHasFinishedSpeaking = true;
       setStatus(ChatStatus.listeningToUser);
       unmuteMic();
     });
@@ -183,21 +187,25 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     rep.onSpeech.listen((speech) async {
       if (speech.role == Role.assistant) {
-        setStatus(ChatStatus.speaking);
-
         /// When using websocket, its ideal to index values because there is
         /// no way to ensure their order. But We can't use `speech.contentIndex`
         /// because its value will always be 0 🙄, so we have no option but to
         /// trust simply in the order we receive the data.
         _processAiBytes(speech.audioData);
 
-        muteMic();
+        // Only change status to speaking if AI hasn't already finished
+        // This prevents late-arriving events from changing status after player stopped
+        if (!_aiHasFinishedSpeaking) {
+          setStatus(ChatStatus.speaking);
+          muteMic();
+        }
       }
     });
 
     rep.onSpeechStart.listen((speechStart) {
       var role = speechStart.role;
       if (role == Role.assistant) {
+        _aiHasFinishedSpeaking = false;
         realtimePlayer?.resetBuffer();
       }
     });
