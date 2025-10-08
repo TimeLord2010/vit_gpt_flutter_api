@@ -51,11 +51,9 @@ Logger createGptFlutterLogger(
   List<String> tags, {
   bool appendFlutterApiPrefix = true,
 }) {
-  assert(_outputsCache != null,
-      'Call initializeLogOutputs() before creating loggers');
-
+  List<LogOutput> outputsCache = _outputsCache ?? [ConsoleOutput()];
   return Logger(
-    output: MultiOutput(_outputsCache!),
+    output: MultiOutput(outputsCache),
     printer: GptFlutterLogGroup(
       tags: tags,
       appendFlutterApiPrefix: appendFlutterApiPrefix,
