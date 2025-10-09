@@ -101,6 +101,21 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _startBufferMonitoring();
   }
 
+  Future<void> pause() async {
+    if (!_isPlaying) return;
+    _isPlaying = false;
+    var handle = _soundHandle;
+    if (handle != null) await _player.stop(handle);
+    handleAudioFinished();
+  }
+
+  void seek(Duration time) {
+    var handle = _soundHandle;
+    if (handle != null) {
+      _player.seek(handle, time);
+    }
+  }
+
   void _createVolumeChunks(Uint8List audioData, Duration chunkDuration) {
     // If the chunk duration is less than or equal to granularity, create a single chunk
     if (chunkDuration <= _volumeGranularity) {
