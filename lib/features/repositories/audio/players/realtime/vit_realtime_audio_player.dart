@@ -339,7 +339,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   void dispose() {
     _bufferMonitor?.cancel();
-    _player.disposeAllSources();
+    if (_player.isInitialized) _player.disposeAllSources();
     _stopStream.close();
     _volumeStreamController.close();
     _positionStreamController.close();
