@@ -6,6 +6,7 @@ import 'package:vit_gpt_flutter_api/data/contracts/realtime_audio_player.dart';
 import 'package:vit_gpt_flutter_api/factories/create_grouped_logger.dart';
 import 'package:vit_gpt_flutter_api/features/repositories/audio/volume_smoother.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/audio/get_audio_intensity_from_pcm_16.dart';
+import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 
 import 'audio_routing.dart';
 
@@ -15,6 +16,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   final _player = SoLoud.instance;
   final _stopStream = StreamController<void>();
   final _volumeStreamController = StreamController<double>.broadcast();
+  final _positionStreamController = StreamController<Duration>.broadcast();
 
   // Volume granularity control
   static const Duration _volumeGranularity = Duration(milliseconds: 150);
@@ -66,6 +68,9 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Stream<double> get volumeStream => _volumeStreamController.stream;
 
+  /// Stream that emits the current playback position with total duration
+  Stream<Duration> get positionStream => _positionStreamController.stream;
+
   @override
   Future<void> appendBytes(Uint8List audioData) async {
     await _setupCompleter?.future;
@@ -98,6 +103,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
     _isPlaying = true;
     _soundHandle = await _player.play(_source!);
+
     _startBufferMonitoring();
   }
 
@@ -204,9 +210,9 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
         return;
       }
 
-      // Emit volume for current position using manual tracking
-      final currentPos = currentPosition;
-      _emitVolumeForPosition(currentPos);
+      _emitVolume();
+
+      _emitPosition();
 
       // Check for end of playback when stream is completed
       final bufferSize = _player.getBufferSize(_source!);
@@ -221,8 +227,20 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     });
   }
 
-  void _emitVolumeForPosition(Duration position) {
+  void _emitPosition() {
+    try {
+      /// Only valid for BufferingType.released. Use `_player.getPosition(handle);` for other types of buffering types.
+      var duration = _player.getStreamTimeConsumed(_source!);
+      _positionStreamController.add(duration);
+    } catch (e) {
+      _logger.e(getErrorMessage(e) ?? 'Error');
+    }
+  }
+
+  void _emitVolume() {
     if (!monitorBuffer) return;
+
+    var position = currentPosition;
 
     //_logger.d('Checking volume at position $position');
     // Find the audio chunk that corresponds to the current playback position
@@ -324,6 +342,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _player.disposeAllSources();
     _stopStream.close();
     _volumeStreamController.close();
+    _positionStreamController.close();
     _volumeChunks.clear();
     AudioRouting.cleanup();
   }
