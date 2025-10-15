@@ -13,6 +13,22 @@ import 'audio_routing.dart';
 var _logger = createGptFlutterLogger(['VitRealtimeAudioPlayer']);
 
 class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
+  /// Controls whether audio should automatically play when data is received
+  final bool autoPlay;
+
+  /// Controls whether to monitor buffer for volume and playback completion
+  final bool monitorBuffer;
+
+  /// Indicates data is deleted as soon as its played.
+  final bool createReleasedBuffers;
+
+  /// Constructor with optional autoPlay and monitorBuffer parameters
+  VitRealtimeAudioPlayer({
+    this.autoPlay = true,
+    this.monitorBuffer = true,
+    this.createReleasedBuffers = true,
+  });
+
   final _player = SoLoud.instance;
   final _stopStream = StreamController<void>();
   final _volumeStreamController = StreamController<double>.broadcast();
@@ -33,15 +49,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   Completer? _setupCompleter;
   Timer? _bufferMonitor;
   bool _streamCompleted = false;
-
-  /// Controls whether audio should automatically play when data is received
-  final bool autoPlay;
-
-  /// Controls whether to monitor buffer for volume and playback completion
-  final bool monitorBuffer;
-
-  /// Constructor with optional autoPlay and monitorBuffer parameters
-  VitRealtimeAudioPlayer({this.autoPlay = true, this.monitorBuffer = true});
 
   // Manual position tracking for streams
   DateTime? _playbackStartTime;
@@ -111,7 +118,11 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     if (!_isPlaying) return;
     _isPlaying = false;
     var handle = _soundHandle;
-    if (handle != null) await _player.stop(handle);
+    if (handle != null) {
+      await _player.stop(handle);
+    } else {
+      _logger.w('Unable to stop sound: midding sound handle');
+    }
     handleAudioFinished();
   }
 
@@ -119,6 +130,8 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     var handle = _soundHandle;
     if (handle != null) {
       _player.seek(handle, time);
+    } else {
+      _logger.w('Unable to seek: midding sound handle');
     }
   }
 
@@ -205,33 +218,37 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     if (!monitorBuffer) return;
 
     _bufferMonitor = Timer.periodic(Duration(milliseconds: 50), (timer) async {
-      if (_source == null || !_isPlaying || _soundHandle == null) {
-        _logger.w('Invalid configuration for timer');
-        return;
-      }
-
       _emitVolume();
 
       _emitPosition();
 
       // Check for end of playback when stream is completed
-      final bufferSize = _player.getBufferSize(_source!);
-      _logger.d('Buffer size: $bufferSize');
-      if (bufferSize == 0 && _streamCompleted) {
-        _logger.d('Buffer empty and stream completed - finishing playback');
-        timer.cancel();
-        await Future.delayed(Duration(milliseconds: 500), () {
-          handleAudioFinished();
-        });
+      var source = _source;
+      if (source != null) {
+        final bufferSize = _player.getBufferSize(source);
+        _logger.d('Buffer size: $bufferSize');
+        if (bufferSize == 0 && _streamCompleted) {
+          _logger.d('Buffer empty and stream completed - finishing playback');
+          timer.cancel();
+          await Future.delayed(Duration(milliseconds: 500), () {
+            handleAudioFinished();
+          });
+        }
       }
     });
   }
 
   void _emitPosition() {
     try {
-      /// Only valid for BufferingType.released. Use `_player.getPosition(handle);` for other types of buffering types.
-      var duration = _player.getStreamTimeConsumed(_source!);
-      _positionStreamController.add(duration);
+      Duration? duration;
+      if (createReleasedBuffers) {
+        var source = _source;
+        if (source != null) duration = _player.getStreamTimeConsumed(source);
+      } else {
+        var handle = _soundHandle;
+        if (handle != null) duration = _player.getPosition(handle);
+      }
+      if (duration != null) _positionStreamController.add(duration);
     } catch (e) {
       _logger.e(getErrorMessage(e) ?? 'Error');
     }
@@ -320,7 +337,9 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       channels: Channels.mono,
       sampleRate: 24000,
       format: BufferType.s16le,
-      bufferingType: BufferingType.released,
+      bufferingType: createReleasedBuffers
+          ? BufferingType.released
+          : BufferingType.preserved,
     );
 
     // Reset state for new stream
