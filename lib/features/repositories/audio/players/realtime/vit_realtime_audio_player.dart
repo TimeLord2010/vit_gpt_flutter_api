@@ -109,7 +109,13 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     if (_isPlaying) return;
 
     _isPlaying = true;
-    _soundHandle = await _player.play(_source!);
+
+    var handle = _soundHandle;
+    if (handle != null && _player.getPause(handle)) {
+      _player.setPause(handle, false);
+    } else {
+      _soundHandle = await _player.play(_source!);
+    }
 
     _startBufferMonitoring();
   }
@@ -119,7 +125,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _isPlaying = false;
     var handle = _soundHandle;
     if (handle != null) {
-      await _player.stop(handle);
+      _player.setPause(handle, true);
     } else {
       _logger.w('Unable to stop sound: midding sound handle');
     }
@@ -391,6 +397,15 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     return rawVolume;
     // var smoothed = volmeSmoother.smooth(rawVolume);
     // return smoothed;
+  }
+
+  void changePlaySpeed(double speed) {
+    var soundHandle = _soundHandle;
+    if (soundHandle != null) {
+      _player.setRelativePlaySpeed(soundHandle, speed);
+    } else {
+      _logger.e('Unable to change play speed: No sound handle');
+    }
   }
 }
 
