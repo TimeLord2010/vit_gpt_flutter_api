@@ -129,7 +129,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     } else {
       _logger.w('Unable to stop sound: midding sound handle');
     }
-    handleAudioFinished();
+    _stopStream.add(null);
   }
 
   void seek(Duration time) {
@@ -137,7 +137,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     if (handle != null) {
       _player.seek(handle, time);
     } else {
-      _logger.w('Unable to seek: midding sound handle');
+      _logger.w('Unable to seek: missing sound handle');
     }
   }
 
@@ -295,7 +295,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       _bufferMonitor?.cancel();
     } catch (_) {}
     _bufferMonitor = null;
-    _soundHandle = null;
 
     // Reset manual position tracking
     _playbackStartTime = null;
@@ -367,6 +366,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     var source = _source;
     if (source != null) _player.disposeSource(source);
     _stopStream.close();
+    _soundHandle = null;
     _volumeStreamController.close();
     _positionStreamController.close();
     _volumeChunks.clear();
