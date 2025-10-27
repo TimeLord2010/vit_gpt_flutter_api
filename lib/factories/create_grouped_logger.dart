@@ -16,10 +16,10 @@ class GptFlutterLogGroup extends LogPrinter {
     this.appendFlutterApiPrefix = true,
   });
 
+  static bool addTimeInfo = false;
+
   @override
   List<String> log(LogEvent event) {
-    var dt = DateTime.now();
-    var timeStr = dt.toIso8601String().split('T')[1];
     var prefix = [
       if (appendFlutterApiPrefix) 'VitGptFlutter',
       ...tags,
@@ -27,8 +27,16 @@ class GptFlutterLogGroup extends LogPrinter {
     var msg = event.message;
     var error = event.error;
 
+    String getTimeStr() {
+      var dt = DateTime.now();
+      return dt.toIso8601String().split('T')[1];
+    }
+
     return [
-      '($prefix) [${event.level.name.toUpperCase()}] $timeStr: $msg',
+      if (addTimeInfo)
+        '($prefix) [${event.level.name.toUpperCase()}] ${getTimeStr()}: $msg'
+      else
+        '($prefix) [${event.level.name.toUpperCase()}]: $msg',
       if (error != null) getErrorMessage(error) ?? '...',
     ];
   }

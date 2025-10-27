@@ -232,7 +232,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       var source = _source;
       if (source != null) {
         final bufferSize = _player.getBufferSize(source);
-        _logger.d('Buffer size: $bufferSize');
+        // _logger.d('Buffer size: $bufferSize');
         if (bufferSize == 0 && _streamCompleted) {
           _logger.d('Buffer empty and stream completed - finishing playback');
           timer.cancel();
