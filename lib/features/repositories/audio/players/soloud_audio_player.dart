@@ -66,7 +66,11 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
 
   @override
   Future<void> stop() async {
-    await dispose();
+    if (soundHandle != null) {
+      await player.stop(soundHandle!);
+    } else {
+      await dispose();
+    }
   }
 
   @override
@@ -82,7 +86,7 @@ class SoLoudAudioPlayer extends api.SimpleAudioPlayer {
   Future<void> pause() async {
     var handle = soundHandle;
     if (handle == null) return;
-    player.setPause(handle, true);
+    player.setPause(handle, !player.getPause(handle));
   }
 
   @override
