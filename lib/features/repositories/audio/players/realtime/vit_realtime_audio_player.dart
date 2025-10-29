@@ -328,12 +328,18 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     // Configure audio routing for speaker output (web only)
     AudioRouting.configureForSpeakerOutput();
 
-    if (!_player.isInitialized) {
-      await _player.init(
-        automaticCleanup: true,
-        channels: Channels.mono,
-        sampleRate: 24000,
-      );
+    try {
+      if (!_player.isInitialized) {
+        await _player.init(
+          automaticCleanup: true,
+          channels: Channels.mono,
+          sampleRate: 24000,
+        );
+      }
+    } catch (e) {
+      var msg = getErrorMessage(e);
+      _logger.e('Failed to initialize player: $msg');
+      rethrow;
     }
 
     await _player.disposeAllSources();

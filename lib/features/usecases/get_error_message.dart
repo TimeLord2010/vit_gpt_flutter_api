@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
-String? getErrorMessage(Object obj) {
+String getErrorMessage(Object obj) {
   if (obj is AssertionError && obj.message != null) {
     return getErrorMessage(obj.message!);
   }
@@ -48,7 +48,7 @@ String? getErrorMessage(Object obj) {
   if (obj is String) {
     return obj;
   }
-  return null;
+  return '?';
 }
 
 String? _getMessageFromMap(Map<String, dynamic> map) {
