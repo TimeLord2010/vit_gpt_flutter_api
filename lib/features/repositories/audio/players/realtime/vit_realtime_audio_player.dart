@@ -256,7 +256,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       }
       if (duration != null) _positionStreamController.add(duration);
     } catch (e) {
-      _logger.e(getErrorMessage(e) ?? 'Error');
+      _logger.e(getErrorMessage(e));
     }
   }
 
