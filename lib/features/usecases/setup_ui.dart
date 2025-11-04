@@ -30,13 +30,19 @@ Future<void> setupUI({
     );
   };
 
-  var sp = await SharedPreferences.getInstance();
-  GetIt.I.registerSingleton(sp);
+  if (!GetIt.I.isRegistered<SharedPreferences>()) {
+    var sp = await SharedPreferences.getInstance();
+    GetIt.I.registerSingleton(sp);
+  }
 
   // Setting up local storage
+  var sp = GetIt.I.get<SharedPreferences>();
   var localStorageRepository = LocalStorageRepository(sp);
   await localStorageRepository.prepare();
-  GetIt.I.registerSingleton<LocalStorageModel>(localStorageRepository);
+  if (!GetIt.I.isRegistered<LocalStorageModel>()) {
+    GetIt.I.registerSingleton<LocalStorageModel>(localStorageRepository);
+  }
+
   DynamicFactories.localStorage = () => LocalStorageRepository(sp);
 
   //VitGptDartConfiguration.internalFilesDirectory = appDocDir;
