@@ -1,3 +1,18 @@
+## 1.11.0
+
+- Feat: Implemented audio recording capabilities with mute/unmute controls
+- Feat: Enhanced realtime audio player with pause, seek, and configurable buffer handling
+- Feat: Added audio routing and sequencing functionality
+- Feat: Added meeting report feature
+- Feat: Added support for initial messages in conversations
+- Feat: Enhanced audio playback with position tracking and auto-play controls
+- Fix: Improved memory management for provider disposal
+- Fix: Fixed audio clipping issues and pause functionality
+- Fix: Resolved duplicate singleton registration in setupUI
+- Fix: Fixed realtime voice mode provider microphone handling
+- Build: Updated dependencies including flutter_soloud 3.4.1 and vit_gpt_dart_api from pub dev
+- Refac: Improved error logging and reduced debug noise
+
 ## 1.10.1
 
 - Fix: Mute and unmute microphone now does not interfere on the ai audio in the `RealtimeVoiceModeProvider`.
@@ -5,8 +20,8 @@
 
 ## 1.10.0
 
-- `RealtimeVoiceModeProvider` updates "_audioVolumeStreamController" with the ai player volume
-levels.
+- `RealtimeVoiceModeProvider` updates "\_audioVolumeStreamController" with the ai player volume
+  levels.
 
 ## 1.9.1
 
@@ -20,7 +35,7 @@ levels.
 ## 1.8.1
 
 - Fix: When sending a message using the `ConversationProvider`, the user message is shown as soon
-as possible, instead of when the connection to the response stream is stablished.
+  as possible, instead of when the connection to the response stream is stablished.
 
 ## 1.8.0
 
@@ -43,7 +58,7 @@ as possible, instead of when the connection to the response stream is stablished
 ## 1.6.0
 
 - Feat: `VitGptFlutterConfiguration` now includes realtimeAudioPlayer factory method to customize
-the player used in the `RealtimeVoiceModeProvider`.
+  the player used in the `RealtimeVoiceModeProvider`.
 - Fix: `RealtimeVoiceModeProvider` creates messages in the chat correctly.
 
 ## 1.5.6
@@ -142,79 +157,79 @@ the player used in the `RealtimeVoiceModeProvider`.
 ## 0.5.0
 
 - FEAT: Creates a thread/conversation in the API when `ConversationProvider` is created instead of
-when the user first sends a message.
+  when the user first sends a message.
 
 ## 0.4.3
 
-* BUILD: Updated dependencies.
+- BUILD: Updated dependencies.
 
 ## 0.4.2
 
-* FIX: handling transcription in voice mode provider.
+- FIX: handling transcription in voice mode provider.
 
 ## 0.4.1
 
-* FEAT: Using assistant repository factory on `ConversationProvider`.
+- FEAT: Using assistant repository factory on `ConversationProvider`.
 
 ## 0.4.0
 
-* FEAT: Prevent screen from turning off when in voice mode.
+- FEAT: Prevent screen from turning off when in voice mode.
 
 ## 0.3.4
 
-* FIX: Stop voice mode notifies the UI
+- FIX: Stop voice mode notifies the UI
 
 ## 0.3.3
 
-* Log: Added logs to voice mode transcription
+- Log: Added logs to voice mode transcription
 
 ## 0.3.2
 
-* Fixed: Voice mode provider transcription
+- Fixed: Voice mode provider transcription
 
 ## 0.3.1
 
-* Updated dependencies
-* Refac to comply with new `TranscribeModel` from dart api.
+- Updated dependencies
+- Refac to comply with new `TranscribeModel` from dart api.
 
 ## 0.3.0
 
-* FEAT: `ConversationProvider` now has onJsonComplete on constructor.
+- FEAT: `ConversationProvider` now has onJsonComplete on constructor.
 
 ## 0.2.0
 
-* FEAT: `ConversationsProvider` loads conversations in parallel.
+- FEAT: `ConversationsProvider` loads conversations in parallel.
 
 ## 0.1.1
 
-* miniFEAT: `ConversationProvider` constructor with selected assistant
+- miniFEAT: `ConversationProvider` constructor with selected assistant
 
 ## 0.1.0
 
-* FEAT: Removed vibration package.
-* FEAT: Dynamic function call for when user finishes speaking (by using `VitGptFlutterConfiguration`).
-* FIX: Removed call to non existing asset.
+- FEAT: Removed vibration package.
+- FEAT: Dynamic function call for when user finishes speaking (by using `VitGptFlutterConfiguration`).
+- FIX: Removed call to non existing asset.
 
 ## 0.0.6
 
-* FIX: Stop user listening if user canceled voice mode.
+- FIX: Stop user listening if user canceled voice mode.
 
 ## 0.0.5
 
-* Refac: Stop voice interaction
+- Refac: Stop voice interaction
 
 ## 0.0.4
 
-* FIX: Stop voice interaction
+- FIX: Stop voice interaction
 
 ## 0.0.3
 
-* FIX: Removed test error
+- FIX: Removed test error
 
 ## 0.0.2
 
-* Added method "updateUI" to `ConversationProvider` (to prevent error of protected members of a class).
+- Added method "updateUI" to `ConversationProvider` (to prevent error of protected members of a class).
 
 ## 0.0.1
 
-* Initial release.
+- Initial release.
