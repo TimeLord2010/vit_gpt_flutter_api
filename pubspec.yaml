@@ -22,8 +22,7 @@ dependencies:
   record: ^6.0.0
   shared_preferences: ^2.3.3
   vit_dart_extensions: ^4.0.0
-  vit_gpt_dart_api:
-    path: ../vit_gpt_dart_api
+  vit_gpt_dart_api: ^6.2.0
   wakelock_plus: ^1.2.10
 
 dev_dependencies:
