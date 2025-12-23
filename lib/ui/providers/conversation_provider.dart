@@ -102,7 +102,8 @@ class ConversationProvider with ChangeNotifier {
   ChatStatus get status => _status;
   set status(ChatStatus newStatus) {
     if (_status != newStatus) {
-      VitGptFlutterConfiguration.logger.d('Changing chat status from ${_status.name} to ${newStatus.name}');
+      VitGptFlutterConfiguration.logger
+          .d('Changing chat status from ${_status.name} to ${newStatus.name}');
     }
     _status = newStatus;
   }
@@ -168,11 +169,13 @@ class ConversationProvider with ChangeNotifier {
   Future<void> setup() async {
     var c = conversation;
     if (c == null) {
-      VitGptFlutterConfiguration.logger.w('Aborting messages load: no original conversation');
+      VitGptFlutterConfiguration.logger
+          .w('Aborting messages load: no original conversation');
       return;
     }
     if (c.messages.isNotEmpty) {
-      VitGptFlutterConfiguration.logger.w('Aborting load messages: messages already found');
+      VitGptFlutterConfiguration.logger
+          .w('Aborting load messages: messages already found');
       return;
     }
     var id = c.id;
@@ -342,7 +345,8 @@ class ConversationProvider with ChangeNotifier {
 
     var id = c?.id;
     if (id == null) {
-      VitGptFlutterConfiguration.logger.w('Unabled to delete conversation without an id');
+      VitGptFlutterConfiguration.logger
+          .w('Unabled to delete conversation without an id');
       return;
     }
 
@@ -393,19 +397,23 @@ class ConversationProvider with ChangeNotifier {
             role: transcriptionEnd.role,
             text: transcriptionEnd.content,
             audio: audioBytes,
+            itemId: transcriptionEnd.id,
+            previousItemId: transcriptionEnd.previousItemId,
           );
           messages.add(msg);
 
           var id = conversation?.id;
           if (id == null) {
-            _logger.e('Unable to create message due to missing conversation id');
+            _logger
+                .e('Unable to create message due to missing conversation id');
             return;
           }
 
           // We could also add assistant messages here. But we dont receive the
           // "usage" object here.
           if (transcriptionEnd.role == Role.user) {
-            _logger.d('Adding message using transcription end: $transcriptionEnd');
+            _logger
+                .d('Adding message using transcription end: $transcriptionEnd');
             var rep = createThreadsRepository();
             await rep.createMessage(id, msg);
           }
@@ -417,7 +425,8 @@ class ConversationProvider with ChangeNotifier {
           var content = outputItem?.content.single;
           var text = content?.text ?? content?.transcript;
           if (text == null) {
-            _logger.w('Aborting reading assistant message because no text was found.');
+            _logger.w(
+                'Aborting reading assistant message because no text was found.');
             return;
           }
 
@@ -425,6 +434,8 @@ class ConversationProvider with ChangeNotifier {
             message: text,
             usage: response.usage,
             audio: audioBytes,
+            itemId: outputItem?.id,
+            previousItemId: response?.previousItemId,
           );
           var id = conversation?.id;
           if (id != null) {
