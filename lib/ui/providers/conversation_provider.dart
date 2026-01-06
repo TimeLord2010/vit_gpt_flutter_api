@@ -67,10 +67,11 @@ class ConversationProvider with ChangeNotifier {
   final controller = TextEditingController();
 
   late VoiceModeContract voiceModeProvider = VoiceModeProvider(
-    errorReporter: (context, message) {
+    errorReporter: (context, message, {stackTrace}) {
       _showError(
         title: context,
         message: message,
+        stackTrace: stackTrace,
       );
     },
     notifyListeners: () => notifyListeners(),
@@ -102,8 +103,7 @@ class ConversationProvider with ChangeNotifier {
   ChatStatus get status => _status;
   set status(ChatStatus newStatus) {
     if (_status != newStatus) {
-      VitGptFlutterConfiguration.logger
-          .d('Changing chat status from ${_status.name} to ${newStatus.name}');
+      VitGptFlutterConfiguration.logger.d('Changing chat status from ${_status.name} to ${newStatus.name}');
     }
     _status = newStatus;
   }
@@ -169,13 +169,11 @@ class ConversationProvider with ChangeNotifier {
   Future<void> setup() async {
     var c = conversation;
     if (c == null) {
-      VitGptFlutterConfiguration.logger
-          .w('Aborting messages load: no original conversation');
+      VitGptFlutterConfiguration.logger.w('Aborting messages load: no original conversation');
       return;
     }
     if (c.messages.isNotEmpty) {
-      VitGptFlutterConfiguration.logger
-          .w('Aborting load messages: messages already found');
+      VitGptFlutterConfiguration.logger.w('Aborting load messages: messages already found');
       return;
     }
     var id = c.id;
@@ -287,9 +285,9 @@ class ConversationProvider with ChangeNotifier {
       VitGptFlutterConfiguration.logger.i('Finished reading response stream');
 
       if (onTextResponse != null) onTextResponse!(this);
-    } catch (e) {
+    } catch (e, stackTrace) {
       var msg = getErrorMessage(e) ?? 'Failed to fetch response';
-      VitGptFlutterConfiguration.logger.e(msg, error: e);
+      VitGptFlutterConfiguration.logger.e(msg, error: e, stackTrace: stackTrace);
       if (context != null && context.mounted) {
         await showDialog(
           context: context,
@@ -315,7 +313,16 @@ class ConversationProvider with ChangeNotifier {
   Future<void> _showError({
     String? title,
     String? message,
+    StackTrace? stackTrace,
   }) async {
+    if (stackTrace != null) {
+      VitGptFlutterConfiguration.logger.e(
+        '${title ?? 'Erro'}: ${message ?? ''}',
+        error: message,
+        stackTrace: stackTrace,
+      );
+    }
+
     var controller = DefaultFlashController(
       context,
       duration: const Duration(seconds: 5),
@@ -345,8 +352,7 @@ class ConversationProvider with ChangeNotifier {
 
     var id = c?.id;
     if (id == null) {
-      VitGptFlutterConfiguration.logger
-          .w('Unabled to delete conversation without an id');
+      VitGptFlutterConfiguration.logger.w('Unabled to delete conversation without an id');
       return;
     }
 
@@ -404,16 +410,14 @@ class ConversationProvider with ChangeNotifier {
 
           var id = conversation?.id;
           if (id == null) {
-            _logger
-                .e('Unable to create message due to missing conversation id');
+            _logger.e('Unable to create message due to missing conversation id');
             return;
           }
 
           // We could also add assistant messages here. But we dont receive the
           // "usage" object here.
           if (transcriptionEnd.role == Role.user) {
-            _logger
-                .d('Adding message using transcription end: $transcriptionEnd');
+            _logger.d('Adding message using transcription end: $transcriptionEnd');
             var rep = createThreadsRepository();
             await rep.createMessage(id, msg);
           }
@@ -425,8 +429,7 @@ class ConversationProvider with ChangeNotifier {
           var content = outputItem?.content.single;
           var text = content?.text ?? content?.transcript;
           if (text == null) {
-            _logger.w(
-                'Aborting reading assistant message because no text was found.');
+            _logger.w('Aborting reading assistant message because no text was found.');
             return;
           }
 
@@ -454,10 +457,11 @@ class ConversationProvider with ChangeNotifier {
       voiceModeProvider = p;
     } else {
       voiceModeProvider = VoiceModeProvider(
-        errorReporter: (context, message) {
+        errorReporter: (context, message, {stackTrace}) {
           _showError(
             title: context,
             message: message,
+            stackTrace: stackTrace,
           );
         },
         notifyListeners: () => notifyListeners(),

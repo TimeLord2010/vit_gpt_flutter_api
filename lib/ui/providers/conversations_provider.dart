@@ -6,8 +6,7 @@ import 'package:vit_gpt_flutter_api/features/repositories/paginated_repository.d
 
 import '../../features/usecases/get_error_message.dart';
 
-class ConversationsProvider extends ChangeNotifier
-    with PaginatedRepository<Conversation> {
+class ConversationsProvider extends ChangeNotifier with PaginatedRepository<Conversation> {
   final BuildContext context;
 
   final bool ignoreUpdatedAtOnSort;
@@ -57,11 +56,9 @@ class ConversationsProvider extends ChangeNotifier
       //     titles: titles,
       //   );
       // }
-    } on Exception catch (e) {
-      Widget adaptiveAction(
-          {required BuildContext context,
-          required VoidCallback onPressed,
-          required Widget child}) {
+    } on Exception catch (e, stackTrace) {
+      debugPrint('Error loading conversations: $e\nStackTrace: $stackTrace');
+      Widget adaptiveAction({required BuildContext context, required VoidCallback onPressed, required Widget child}) {
         ThemeData theme = Theme.of(context);
         switch (theme.platform) {
           case TargetPlatform.android:
@@ -83,9 +80,8 @@ class ConversationsProvider extends ChangeNotifier
             title: const Text('Falha ao carregar conversas'),
             content: Column(
               children: [
-                const Text(
-                    'Verifique sua conexão com a internet e certifique-se que a token de API está válida.'),
-                Text('Logs:${getErrorMessage(e) ?? '...'}'),
+                const Text('Verifique sua conexão com a internet e certifique-se que a token de API está válida.'),
+                Text('Logs:${getErrorMessage(e)}'),
               ],
             ),
             actions: [
