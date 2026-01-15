@@ -37,7 +37,7 @@ class GptFlutterLogGroup extends LogPrinter {
         '($prefix) [${event.level.name.toUpperCase()}] ${getTimeStr()}: $msg'
       else
         '($prefix) [${event.level.name.toUpperCase()}]: $msg',
-      if (error != null) getErrorMessage(error) ?? '...',
+      if (error != null) getErrorMessage(error),
     ];
   }
 }
