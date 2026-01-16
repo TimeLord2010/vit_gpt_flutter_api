@@ -1,12 +1,12 @@
 name: vit_gpt_flutter_api
-description: 'Collection of classes to save and connect to open ai resources'
+description: "Collection of classes to save and connect to open ai resources"
 version: 1.11.0
 repository: https://github.com/TimeLord2010/vit_gpt_flutter_api
 # publish_to: none
 
 environment:
   sdk: ^3.5.4
-  flutter: '>=1.17.0'
+  flutter: ">=1.17.0"
 
 dependencies:
   dio: ^5.7.0

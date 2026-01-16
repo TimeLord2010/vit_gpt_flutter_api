@@ -67,10 +67,11 @@ class ConversationProvider with ChangeNotifier {
   final controller = TextEditingController();
 
   late VoiceModeContract voiceModeProvider = VoiceModeProvider(
-    errorReporter: (context, message) {
+    errorReporter: (context, message, {stackTrace}) {
       _showError(
         title: context,
         message: message,
+        stackTrace: stackTrace,
       );
     },
     notifyListeners: () => notifyListeners(),
@@ -240,7 +241,7 @@ class ConversationProvider with ChangeNotifier {
       if (assistant == null) {
         completion = CompletionRepository(
           dio: httpClient,
-          model: model ?? GptModel.gpt4oMini,
+          model: model!,
         );
       } else {
         var rep = createAssistantRepository(assistant!.id, conversation!.id!);
@@ -287,9 +288,10 @@ class ConversationProvider with ChangeNotifier {
       VitGptFlutterConfiguration.logger.i('Finished reading response stream');
 
       if (onTextResponse != null) onTextResponse!(this);
-    } catch (e) {
-      var msg = getErrorMessage(e) ?? 'Failed to fetch response';
-      VitGptFlutterConfiguration.logger.e(msg, error: e);
+    } catch (e, stackTrace) {
+      var msg = getErrorMessage(e);
+      VitGptFlutterConfiguration.logger
+          .e(msg, error: e, stackTrace: stackTrace);
       if (context != null && context.mounted) {
         await showDialog(
           context: context,
@@ -315,7 +317,16 @@ class ConversationProvider with ChangeNotifier {
   Future<void> _showError({
     String? title,
     String? message,
+    StackTrace? stackTrace,
   }) async {
+    if (stackTrace != null) {
+      VitGptFlutterConfiguration.logger.e(
+        '${title ?? 'Erro'}: ${message ?? ''}',
+        error: message,
+        stackTrace: stackTrace,
+      );
+    }
+
     var controller = DefaultFlashController(
       context,
       duration: const Duration(seconds: 5),
@@ -397,6 +408,8 @@ class ConversationProvider with ChangeNotifier {
             role: transcriptionEnd.role,
             text: transcriptionEnd.content,
             audio: audioBytes,
+            itemId: transcriptionEnd.id,
+            previousItemId: transcriptionEnd.previousItemId,
           );
           messages.add(msg);
 
@@ -432,6 +445,8 @@ class ConversationProvider with ChangeNotifier {
             message: text,
             usage: response.usage,
             audio: audioBytes,
+            itemId: outputItem?.id,
+            previousItemId: response?.previousItemId,
           );
           var id = conversation?.id;
           if (id != null) {
@@ -450,10 +465,11 @@ class ConversationProvider with ChangeNotifier {
       voiceModeProvider = p;
     } else {
       voiceModeProvider = VoiceModeProvider(
-        errorReporter: (context, message) {
+        errorReporter: (context, message, {stackTrace}) {
           _showError(
             title: context,
             message: message,
+            stackTrace: stackTrace,
           );
         },
         notifyListeners: () => notifyListeners(),

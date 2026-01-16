@@ -48,13 +48,13 @@ class LocalStorageRepository extends LocalStorageModel {
   }
 
   @override
-  Future<GptModel?> getChatModel() async {
+  Future<String?> getChatModel() async {
     var model = preferences.getString('model');
-    return GptModel.fromString(model ?? '');
+    return model;
   }
 
   @override
-  Future<void> saveChatModel(GptModel model) async {
+  Future<void> saveChatModel(String model) async {
     await preferences.setString('model', model.toString());
   }
 
