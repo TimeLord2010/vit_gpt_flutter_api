@@ -1,3 +1,9 @@
+## 1.12.0
+
+- Feat: New realtime API integration with improved functionality
+- Feat: Added message sorting with itemId and previousItemId tracking
+- Fix: Fixed realtime voice mode issues
+
 ## 1.11.0
 
 - Feat: Implemented audio recording capabilities with mute/unmute controls
