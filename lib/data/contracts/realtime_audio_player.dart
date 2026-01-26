@@ -37,4 +37,10 @@ mixin RealtimeAudioPlayer {
     disposeBufferStream();
     createBufferStream();
   }
+
+  Future<void> play();
+
+  Future<void> pause();
+
+  bool get isPaused;
 }
