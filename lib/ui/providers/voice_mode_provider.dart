@@ -67,7 +67,7 @@ class VoiceModeProvider with VoiceModeContract {
   }
 
   @override
-  Future<RealtimeModel?> startVoiceMode() async {
+  Future<RealtimeModel?> startVoiceMode({bool isPressToTalkMode = false}) async {
     if (isVoiceMode()) {
       return null;
     }

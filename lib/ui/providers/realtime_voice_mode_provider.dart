@@ -28,16 +28,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final Future<void> Function() onStart;
 
   /// Called when a transcription starts. Either from the user or the assistant.
-  final void Function(TranscriptionStart transcriptionStart)? onTranscriptionStart;
+  final void Function(TranscriptionStart transcriptionStart)?
+  onTranscriptionStart;
 
   final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
   final void Function(TranscriptionItem transcriptionItem)? onTranscription;
 
-  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)? onTranscriptionEnd;
+  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)?
+  onTranscriptionEnd;
 
-  final void Function(RealtimeResponse response, List<int>? audioBytes)? onResponse;
+  final void Function(RealtimeResponse response, List<int>? audioBytes)?
+  onResponse;
 
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
@@ -131,7 +134,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   @override
-  Future<RealtimeModel> startVoiceMode() async {
+  Future<RealtimeModel> startVoiceMode({bool isPressToTalkMode = false}) async {
     _logger.i('Starting voice mode');
 
     _isLoadingVoiceMode = true;
@@ -156,7 +159,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       _logger.d('AI finished speaking');
       _aiHasFinishedSpeaking = true;
       setStatus(ChatStatus.listeningToUser);
-      unmuteMic();
+      if (!isPressToTalkMode) {
+        unmuteMic();
+      }
     });
 
     realtimePlayer?.volumeStream.listen((volume) {
@@ -177,7 +182,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     var onTranscriptionEnd = this.onTranscriptionEnd;
     if (onTranscriptionEnd != null) {
       rep.onTranscriptionEnd.listen((transcriptionEnd) {
-        onTranscriptionEnd(transcriptionEnd, userAudioBytesWaitingTranscription);
+        onTranscriptionEnd(
+          transcriptionEnd,
+          userAudioBytesWaitingTranscription,
+        );
       });
     }
 
@@ -210,9 +218,13 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       if (speechEnd.done) {
         if (speechEnd.role == Role.user) {
           userAudioBytesWaitingTranscription.clear();
-          userAudioBytesWaitingTranscription.addAll(userAudioBytesBeingRecorded);
+          userAudioBytesWaitingTranscription.addAll(
+            userAudioBytesBeingRecorded,
+          );
           userAudioBytesBeingRecorded.clear();
-          debugPrint('AUDIO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}');
+          debugPrint(
+            'AUDIO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}',
+          );
         } else {
           // AI speech has ended - signal no more audio data coming
           realtimePlayer?.completeStream();
@@ -231,7 +243,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.onConnectionOpen.listen((_) {
       _isLoadingVoiceMode = false;
       if (rep.isSendingInitialMessages) {
-        _logger.i('Connection is open but the system is receving initial messages. Wating until all messages are received');
+        _logger.i(
+          'Connection is open but the system is receving initial messages. Wating until all messages are received',
+        );
         var sub = rep.onIsSendingInitialMessages.listen(null);
         sub.onData((isSending) async {
           _logger.i('Updated is sending initial message: $isSending');

@@ -25,7 +25,7 @@ mixin VoiceModeContract {
 
   Future<void> stopVoiceMode();
 
-  Future<RealtimeModel?> startVoiceMode();
+  Future<RealtimeModel?> startVoiceMode({bool isPressToTalkMode = false});
 
   void dispose();
 
