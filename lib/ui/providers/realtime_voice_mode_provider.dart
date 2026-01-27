@@ -88,6 +88,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   // Tracks whether AI has finished speaking to prevent race conditions
   bool _aiHasFinishedSpeaking = true;
 
+  // Tracks whether voice mode is paused
+  bool _isPaused = false;
+
   // MARK: Properties
 
   @override
@@ -98,6 +101,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   bool get isInVoiceMode => _isVoiceMode;
+
+  @override
+  bool get isPaused => _isPaused;
 
   // MARK: Methods
 
@@ -211,6 +217,12 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       if (role == Role.assistant) {
         _aiHasFinishedSpeaking = false;
         realtimePlayer?.resetBuffer();
+
+        // If user had paused, new AI speech should unpause
+        if (_isPaused) {
+          _logger.d('New AI speech starting - auto-resuming from pause');
+          _isPaused = false;
+        }
       }
     });
 
@@ -295,10 +307,50 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     if (rep == null) {
       return;
     }
+
+    // If paused, resume first so the stop action works correctly
+    if (_isPaused) {
+      resumeVoiceMode();
+    }
+
     if (rep.isAiSpeaking) {
       rep.stopAiSpeech();
     } else {
       rep.commitUserAudio();
+    }
+  }
+
+  @override
+  Future<void> pauseVoiceMode() async {
+    if (_isPaused || !_isVoiceMode) return;
+
+    _logger.d('Pausing voice mode');
+    _isPaused = true;
+
+    // Pause AI audio playback (if playing)
+    await realtimePlayer?.pause();
+
+    // Pause microphone (always, to prevent unintended recording)
+    await recorder.pause();
+  }
+
+  @override
+  Future<void> resumeVoiceMode() async {
+    if (!_isPaused) return;
+
+    _logger.d('Resuming voice mode');
+    _isPaused = false;
+
+    // Resume AI audio playback (if it was playing)
+    var player = realtimePlayer;
+    if (player != null && player.isPaused) {
+      await player.play();  // This will resume from where it paused
+    }
+
+    // Resume microphone only if appropriate
+    // Don't resume mic if AI is still speaking or hasn't finished
+    if (_oldStatus == ChatStatus.listeningToUser && _aiHasFinishedSpeaking) {
+      await unmuteMic();
     }
   }
 
@@ -320,7 +372,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     userAudioStream.listen((bytes) {
       /// This exists because the library "record" does not mute the microphone
       /// when on web platform.
-      if (!recorder.isRecording()) {
+      if (!recorder.isRecording() || _isPaused) {
         return;
       }
 
@@ -335,12 +387,16 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   Future<void> muteMic() async {
+    if (_isPaused) return;  // Don't interfere with pause state
+
     isMicEnabled = true;
     await recorder.pause();
     debugPrint('AUDIO MODE - MUTE');
   }
 
   Future<void> unmuteMic() async {
+    if (_isPaused) return;  // Don't interfere with pause state
+
     if (!isMicEnabled) {
       debugPrint('Aborting unmute since it is not paused');
       return;

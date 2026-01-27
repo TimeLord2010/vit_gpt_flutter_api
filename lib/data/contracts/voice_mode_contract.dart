@@ -27,6 +27,15 @@ mixin VoiceModeContract {
 
   Future<RealtimeModel?> startVoiceMode({bool isPressToTalkMode = false});
 
+  /// Pauses both AI speech playback and microphone recording
+  Future<void> pauseVoiceMode();
+
+  /// Resumes AI speech playback and microphone recording (if appropriate)
+  Future<void> resumeVoiceMode();
+
+  /// Indicates whether voice mode is currently paused
+  bool get isPaused;
+
   void dispose();
 
   void setStatus(ChatStatus status);

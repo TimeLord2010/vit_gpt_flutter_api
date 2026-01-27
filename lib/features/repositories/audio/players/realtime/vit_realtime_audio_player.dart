@@ -42,6 +42,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   );
 
   bool _isPlaying = false;
+  bool _isPaused = false;
   AudioSource? _source;
 
   /// Used for the "play" method.
@@ -62,9 +63,14 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   /// Get current playback position using manual tracking instead of SoLoud's getPosition
   /// which doesn't work reliably with streams
   Duration get currentPosition {
-    if (_playbackStartTime == null || !_isPlaying) {
+    if (!_isPlaying) {
       return Duration.zero;
     }
+
+    if (_isPaused || _playbackStartTime == null) {
+      return _manualPositionOffset;  // Return saved position while paused
+    }
+
     return DateTime.now().difference(_playbackStartTime!) +
         _manualPositionOffset;
   }
@@ -99,37 +105,63 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
     _player.addAudioDataStream(_source!, audioData);
 
-    if (!_isPlaying && autoPlay) {
+    if (!_isPlaying && !_isPaused && autoPlay) {
       await play();
     }
   }
 
   /// Manually start playback
+  @override
   Future<void> play() async {
-    if (_isPlaying) return;
+    if (_isPlaying && !_isPaused) return;  // Already playing and not paused
 
-    _isPlaying = true;
+    if (_isPaused) {
+      // Resuming from pause
+      _isPaused = false;
+      _playbackStartTime = DateTime.now();  // Restart position tracking
 
-    var handle = _soundHandle;
-    if (handle != null && _player.getPause(handle)) {
-      _player.setPause(handle, false);
+      var handle = _soundHandle;
+      if (handle != null) {
+        _player.setPause(handle, false);
+      }
     } else {
+      // Initial play
+      _isPlaying = true;
+      _playbackStartTime = DateTime.now();
       _soundHandle = await _player.play(_source!);
     }
 
     _startBufferMonitoring();
   }
 
+  @override
   Future<void> pause() async {
-    if (!_isPlaying) return;
-    _isPlaying = false;
+    if (!_isPlaying || _isPaused) return;
+
+    _isPaused = true;
+
+    // Save current position before pausing
+    if (_playbackStartTime != null) {
+      _manualPositionOffset += DateTime.now().difference(_playbackStartTime!);
+      _playbackStartTime = null;  // Stop position tracking
+    }
+
+    // Pause the audio
     var handle = _soundHandle;
     if (handle != null) {
       _player.setPause(handle, true);
     } else {
-      _logger.w('Unable to stop sound: midding sound handle');
+      _logger.w('Unable to pause sound: missing sound handle');
     }
-    _stopStream.add(null);
+
+    // Stop buffer monitoring
+    _bufferMonitor?.cancel();
+    _bufferMonitor = null;
+
+    // Emit zero volume while paused
+    _volumeStreamController.add(0.0);
+
+    // DO NOT emit stopPlayStream - we're paused, not stopped!
   }
 
   void seek(Duration time) {
@@ -200,7 +232,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   }
 
   void _cleanupOldVolumeChunks() {
-    if (!_isPlaying) return;
+    if (!_isPlaying || _isPaused) return;
 
     final currentPos = currentPosition;
     final cutoffTime = currentPos - Duration(seconds: 60);
@@ -382,6 +414,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Future<void> disposeBufferStream() async {
     _isPlaying = false;
+    _isPaused = false;  // Reset pause state
     _bufferMonitor?.cancel();
     _soundHandle = null;
     _volumeChunks.clear();
@@ -414,6 +447,9 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       _logger.e('Unable to change play speed: No sound handle');
     }
   }
+
+  @override
+  bool get isPaused => _isPaused;
 }
 
 class VolumeChunk {
