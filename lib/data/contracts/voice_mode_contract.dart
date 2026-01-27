@@ -33,6 +33,9 @@ mixin VoiceModeContract {
   /// Resumes AI speech playback and microphone recording (if appropriate)
   Future<void> resumeVoiceMode();
 
+  /// Envia o áudio do usuário para o modelo de IA.
+  void commitUserAudio();
+
   /// Indicates whether voice mode is currently paused
   bool get isPaused;
 

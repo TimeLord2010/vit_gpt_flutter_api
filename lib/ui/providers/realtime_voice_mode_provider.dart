@@ -28,19 +28,16 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final Future<void> Function() onStart;
 
   /// Called when a transcription starts. Either from the user or the assistant.
-  final void Function(TranscriptionStart transcriptionStart)?
-  onTranscriptionStart;
+  final void Function(TranscriptionStart transcriptionStart)? onTranscriptionStart;
 
   final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
   final void Function(TranscriptionItem transcriptionItem)? onTranscription;
 
-  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)?
-  onTranscriptionEnd;
+  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)? onTranscriptionEnd;
 
-  final void Function(RealtimeResponse response, List<int>? audioBytes)?
-  onResponse;
+  final void Function(RealtimeResponse response, List<int>? audioBytes)? onResponse;
 
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
@@ -50,6 +47,8 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   final List<int> userAudioBytesBeingRecorded = [];
   final List<int> userAudioBytesWaitingTranscription = [];
+
+  bool? isPressToTalkMode;
 
   RealtimeVoiceModeProvider({
     required void Function(ChatStatus status) setStatus,
@@ -141,6 +140,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
   @override
   Future<RealtimeModel> startVoiceMode({bool isPressToTalkMode = false}) async {
+    this.isPressToTalkMode = isPressToTalkMode;
     _logger.i('Starting voice mode');
 
     _isLoadingVoiceMode = true;
@@ -302,6 +302,16 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   @override
+  void commitUserAudio() {
+    var rep = realtimeModel;
+    if (rep == null) {
+      return;
+    }
+    rep.commitUserAudio();
+    debugPrint('COMMIT USER AUDIO');
+  }
+
+  @override
   void stopVoiceInteraction() {
     var rep = realtimeModel;
     if (rep == null) {
@@ -344,7 +354,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     // Resume AI audio playback (if it was playing)
     var player = realtimePlayer;
     if (player != null && player.isPaused) {
-      await player.play();  // This will resume from where it paused
+      await player.play(); // This will resume from where it paused
     }
 
     // Resume microphone only if appropriate
@@ -387,7 +397,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   Future<void> muteMic() async {
-    if (_isPaused) return;  // Don't interfere with pause state
+    if (_isPaused) return; // Don't interfere with pause state
 
     isMicEnabled = true;
     await recorder.pause();
@@ -395,7 +405,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   Future<void> unmuteMic() async {
-    if (_isPaused) return;  // Don't interfere with pause state
+    if (_isPaused) return; // Don't interfere with pause state
 
     if (!isMicEnabled) {
       debugPrint('Aborting unmute since it is not paused');

@@ -260,4 +260,25 @@ class VoiceModeProvider with VoiceModeContract {
     // no loading is required and the recording is started immediatly.
     return false;
   }
+
+  @override
+  // TODO: implement isPaused
+  bool get isPaused => throw UnimplementedError();
+
+  @override
+  Future<void> pauseVoiceMode() {
+    // TODO: implement pauseVoiceMode
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> resumeVoiceMode() {
+    // TODO: implement resumeVoiceMode
+    throw UnimplementedError();
+  }
+
+  @override
+  void commitUserAudio() {
+    // TODO: implement commitUserAudio
+  }
 }
