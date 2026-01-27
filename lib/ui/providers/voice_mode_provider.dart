@@ -16,7 +16,8 @@ class VoiceModeProvider with VoiceModeContract {
   final void Function() notifyListeners;
   final bool Function() isVoiceMode;
   final void Function(ChatStatus status) _setStatus;
-  final void Function(String context, String message, {StackTrace? stackTrace}) errorReporter;
+  final void Function(String context, String message, {StackTrace? stackTrace})
+      errorReporter;
   final ChatStatus Function() getStatus;
   final Future<void> Function({
     required String text,
@@ -67,7 +68,8 @@ class VoiceModeProvider with VoiceModeContract {
   }
 
   @override
-  Future<RealtimeModel?> startVoiceMode({bool isPressToTalkMode = false}) async {
+  Future<RealtimeModel?> startVoiceMode(
+      {bool isPressToTalkMode = false}) async {
     if (isVoiceMode()) {
       return null;
     }
@@ -115,7 +117,8 @@ class VoiceModeProvider with VoiceModeContract {
     // Checking if speaking was cancelled.
     var status = getStatus();
 
-    if (status == ChatStatus.answeringAndSpeaking || status == ChatStatus.answering) {
+    if (status == ChatStatus.answeringAndSpeaking ||
+        status == ChatStatus.answering) {
       setStatus(ChatStatus.speaking);
     }
 
@@ -186,7 +189,8 @@ class VoiceModeProvider with VoiceModeContract {
     setStatus(ChatStatus.listeningToUser);
     var transcriber = createTranscriberRepository();
     if (transcriber is TranscriberRepository) {
-      transcriber.voiceRecorder.enableSilenceDetection = micSendMode == MicSendMode.intensitySilenceDetection;
+      transcriber.voiceRecorder.enableSilenceDetection =
+          micSendMode == MicSendMode.intensitySilenceDetection;
     }
     this.transcriber = transcriber;
     await transcriber.startTranscribe();
@@ -259,5 +263,21 @@ class VoiceModeProvider with VoiceModeContract {
   bool get isLoadingVoiceMode {
     // no loading is required and the recording is started immediatly.
     return false;
+  }
+
+  @override
+  // TODO: implement isPaused
+  bool get isPaused => false;
+
+  @override
+  Future<void> pauseVoiceMode() {
+    // TODO: implement pauseVoiceMode
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> resumeVoiceMode() {
+    // TODO: implement resumeVoiceMode
+    throw UnimplementedError();
   }
 }
