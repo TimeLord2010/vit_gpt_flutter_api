@@ -263,7 +263,7 @@ class VoiceModeProvider with VoiceModeContract {
 
   @override
   // TODO: implement isPaused
-  bool get isPaused => throw UnimplementedError();
+  bool get isPaused => false;
 
   @override
   Future<void> pauseVoiceMode() {
