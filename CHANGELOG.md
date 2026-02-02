@@ -1,3 +1,7 @@
+## 1.13.1
+
+- Feat: Added clearUserAudioBuffer method to RealtimeVoiceModeProvider for handling short press-to-talk durations
+
 ## 1.13.0
 
 - Feat: Added push-to-talk functionality for voice mode

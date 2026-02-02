@@ -28,16 +28,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final Future<void> Function() onStart;
 
   /// Called when a transcription starts. Either from the user or the assistant.
-  final void Function(TranscriptionStart transcriptionStart)? onTranscriptionStart;
+  final void Function(TranscriptionStart transcriptionStart)?
+      onTranscriptionStart;
 
   final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
   final void Function(TranscriptionItem transcriptionItem)? onTranscription;
 
-  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)? onTranscriptionEnd;
+  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)?
+      onTranscriptionEnd;
 
-  final void Function(RealtimeResponse response, List<int>? audioBytes)? onResponse;
+  final void Function(RealtimeResponse response, List<int>? audioBytes)?
+      onResponse;
 
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
@@ -309,6 +312,12 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     }
     rep.commitUserAudio();
     debugPrint('COMMIT USER AUDIO');
+  }
+
+  /// Clears the buffered user audio without committing it.
+  /// Used when press-to-talk duration is too short.
+  void clearUserAudioBuffer() {
+    userAudioBytesBeingRecorded.clear();
   }
 
   @override
