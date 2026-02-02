@@ -1,3 +1,9 @@
+## 1.13.0
+
+- Feat: Added push-to-talk functionality for voice mode
+- Feat: Added pause/resume capability for realtime sessions
+- Fix: Fixed compilation issues
+
 ## 1.12.0
 
 - Feat: New realtime API integration with improved functionality
