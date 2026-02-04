@@ -50,7 +50,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   Completer? _setupCompleter;
   Timer? _bufferMonitor;
   bool _streamCompleted = false;
-  int _bufferMonitorTicks = 0; // Counter for periodic volume restoration
 
   // Manual position tracking for streams
   DateTime? _playbackStartTime;
@@ -130,13 +129,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       _isPlaying = true;
       _playbackStartTime = DateTime.now();
       _soundHandle = await _player.play(_source!);
-
-      // Explicitly set volume to maximum to override browser volume ducking
-      var handle = _soundHandle;
-      if (handle != null) {
-        _player.setVolume(handle, 1.0);
-        _logger.d('Started playback and set volume to 1.0');
-      }
     }
 
     _startBufferMonitoring();
@@ -260,26 +252,13 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
     // Initialize playback start time for manual position tracking
     _playbackStartTime = DateTime.now();
-    _bufferMonitorTicks = 0; // Reset tick counter
 
     if (!monitorBuffer) return;
 
     _bufferMonitor = Timer.periodic(Duration(milliseconds: 50), (timer) async {
-      _bufferMonitorTicks++;
-
       _emitVolume();
 
       _emitPosition();
-
-      // Periodically restore volume to counter browser ducking (every 500ms)
-      // This prevents volume from staying low after phone calls or other interruptions
-      if (_bufferMonitorTicks % 100 == 0) {
-        // Every 100 ticks = 5000ms
-        var handle = _soundHandle;
-        if (handle != null && !_isPaused) {
-          _player.setVolume(handle, 1.0);
-        }
-      }
 
       // Check for end of playback when stream is completed
       var source = _source;
@@ -463,7 +442,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _isPlaying = false;
     _isPaused = false; // Reset pause state
     _bufferMonitor?.cancel();
-    if (_source != null) await _player.disposeSource(_source!);
+    // if (_source != null) await _player.disposeSource(_source!);
     _soundHandle = null;
     _volumeChunks.clear();
     _totalDuration = Duration.zero;
