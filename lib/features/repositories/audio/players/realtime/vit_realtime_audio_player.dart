@@ -352,32 +352,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _streamCompleted = true;
   }
 
-  /// Force reinitialization of the audio player to reset browser audio context
-  /// Call this when you suspect the browser has reduced audio gain (e.g., after phone calls)
-  Future<void> reinitializeAudioContext() async {
-    _logger.i('Reinitializing audio context to reset browser audio gain');
-
-    try {
-      // Deinitialize to destroy the current AudioContext
-      _player.deinit();
-      _logger.d('Audio player deinitialized');
-
-      // Wait a bit for cleanup
-      await Future.delayed(Duration(milliseconds: 100));
-
-      // Reinitialize with fresh AudioContext
-      await _player.init(
-        automaticCleanup: true,
-        channels: Channels.mono,
-        sampleRate: 24000,
-      );
-      _logger.d('Audio player reinitialized with fresh AudioContext');
-    } catch (e) {
-      _logger.e('Failed to reinitialize audio context: ${getErrorMessage(e)}');
-      rethrow;
-    }
-  }
-
   @override
   Future<void> createBufferStream() async {
     _logger.i('Create buffer stream');
@@ -442,7 +416,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _isPlaying = false;
     _isPaused = false; // Reset pause state
     _bufferMonitor?.cancel();
-    // if (_source != null) await _player.disposeSource(_source!);
     _soundHandle = null;
     _volumeChunks.clear();
     _totalDuration = Duration.zero;
@@ -452,15 +425,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _manualPositionOffset = Duration.zero;
 
     _volumeStreamController.add(0.0);
-
-    // // Reinitialize audio context to clear any browser audio ducking
-    // // This ensures the next AI turn starts with fresh, normal volume
-    // try {
-    //   await reinitializeAudioContext();
-    // } catch (e) {
-    //   _logger.w('Failed to reinitialize audio context during dispose: ${getErrorMessage(e)}');
-    //   // Don't rethrow - this is cleanup, continue anyway
-    // }
   }
 
   double _getVolume(Uint8List data) {
