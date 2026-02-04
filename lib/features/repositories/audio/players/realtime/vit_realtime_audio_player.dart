@@ -50,6 +50,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   Completer? _setupCompleter;
   Timer? _bufferMonitor;
   bool _streamCompleted = false;
+  int _bufferMonitorTicks = 0; // Counter for periodic volume restoration
 
   // Manual position tracking for streams
   DateTime? _playbackStartTime;
@@ -68,7 +69,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     }
 
     if (_isPaused || _playbackStartTime == null) {
-      return _manualPositionOffset;  // Return saved position while paused
+      return _manualPositionOffset; // Return saved position while paused
     }
 
     return DateTime.now().difference(_playbackStartTime!) +
@@ -113,12 +114,12 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   /// Manually start playback
   @override
   Future<void> play() async {
-    if (_isPlaying && !_isPaused) return;  // Already playing and not paused
+    if (_isPlaying && !_isPaused) return; // Already playing and not paused
 
     if (_isPaused) {
       // Resuming from pause
       _isPaused = false;
-      _playbackStartTime = DateTime.now();  // Restart position tracking
+      _playbackStartTime = DateTime.now(); // Restart position tracking
 
       var handle = _soundHandle;
       if (handle != null) {
@@ -129,6 +130,13 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
       _isPlaying = true;
       _playbackStartTime = DateTime.now();
       _soundHandle = await _player.play(_source!);
+
+      // Explicitly set volume to maximum to override browser volume ducking
+      var handle = _soundHandle;
+      if (handle != null) {
+        _player.setVolume(handle, 1.0);
+        _logger.d('Started playback and set volume to 1.0');
+      }
     }
 
     _startBufferMonitoring();
@@ -143,7 +151,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     // Save current position before pausing
     if (_playbackStartTime != null) {
       _manualPositionOffset += DateTime.now().difference(_playbackStartTime!);
-      _playbackStartTime = null;  // Stop position tracking
+      _playbackStartTime = null; // Stop position tracking
     }
 
     // Pause the audio
@@ -252,13 +260,26 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
 
     // Initialize playback start time for manual position tracking
     _playbackStartTime = DateTime.now();
+    _bufferMonitorTicks = 0; // Reset tick counter
 
     if (!monitorBuffer) return;
 
     _bufferMonitor = Timer.periodic(Duration(milliseconds: 50), (timer) async {
+      _bufferMonitorTicks++;
+
       _emitVolume();
 
       _emitPosition();
+
+      // Periodically restore volume to counter browser ducking (every 500ms)
+      // This prevents volume from staying low after phone calls or other interruptions
+      if (_bufferMonitorTicks % 100 == 0) {
+        // Every 100 ticks = 5000ms
+        var handle = _soundHandle;
+        if (handle != null && !_isPaused) {
+          _player.setVolume(handle, 1.0);
+        }
+      }
 
       // Check for end of playback when stream is completed
       var source = _source;
@@ -352,6 +373,32 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _streamCompleted = true;
   }
 
+  /// Force reinitialization of the audio player to reset browser audio context
+  /// Call this when you suspect the browser has reduced audio gain (e.g., after phone calls)
+  Future<void> reinitializeAudioContext() async {
+    _logger.i('Reinitializing audio context to reset browser audio gain');
+
+    try {
+      // Deinitialize to destroy the current AudioContext
+      _player.deinit();
+      _logger.d('Audio player deinitialized');
+
+      // Wait a bit for cleanup
+      await Future.delayed(Duration(milliseconds: 100));
+
+      // Reinitialize with fresh AudioContext
+      await _player.init(
+        automaticCleanup: true,
+        channels: Channels.mono,
+        sampleRate: 24000,
+      );
+      _logger.d('Audio player reinitialized with fresh AudioContext');
+    } catch (e) {
+      _logger.e('Failed to reinitialize audio context: ${getErrorMessage(e)}');
+      rethrow;
+    }
+  }
+
   @override
   Future<void> createBufferStream() async {
     _logger.i('Create buffer stream');
@@ -414,8 +461,9 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Future<void> disposeBufferStream() async {
     _isPlaying = false;
-    _isPaused = false;  // Reset pause state
+    _isPaused = false; // Reset pause state
     _bufferMonitor?.cancel();
+    if (_source != null) await _player.disposeSource(_source!);
     _soundHandle = null;
     _volumeChunks.clear();
     _totalDuration = Duration.zero;
@@ -425,6 +473,15 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     _manualPositionOffset = Duration.zero;
 
     _volumeStreamController.add(0.0);
+
+    // // Reinitialize audio context to clear any browser audio ducking
+    // // This ensures the next AI turn starts with fresh, normal volume
+    // try {
+    //   await reinitializeAudioContext();
+    // } catch (e) {
+    //   _logger.w('Failed to reinitialize audio context during dispose: ${getErrorMessage(e)}');
+    //   // Don't rethrow - this is cleanup, continue anyway
+    // }
   }
 
   double _getVolume(Uint8List data) {
