@@ -68,7 +68,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     }
 
     if (_isPaused || _playbackStartTime == null) {
-      return _manualPositionOffset;  // Return saved position while paused
+      return _manualPositionOffset; // Return saved position while paused
     }
 
     return DateTime.now().difference(_playbackStartTime!) +
@@ -113,12 +113,12 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   /// Manually start playback
   @override
   Future<void> play() async {
-    if (_isPlaying && !_isPaused) return;  // Already playing and not paused
+    if (_isPlaying && !_isPaused) return; // Already playing and not paused
 
     if (_isPaused) {
       // Resuming from pause
       _isPaused = false;
-      _playbackStartTime = DateTime.now();  // Restart position tracking
+      _playbackStartTime = DateTime.now(); // Restart position tracking
 
       var handle = _soundHandle;
       if (handle != null) {
@@ -143,7 +143,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
     // Save current position before pausing
     if (_playbackStartTime != null) {
       _manualPositionOffset += DateTime.now().difference(_playbackStartTime!);
-      _playbackStartTime = null;  // Stop position tracking
+      _playbackStartTime = null; // Stop position tracking
     }
 
     // Pause the audio
@@ -414,7 +414,7 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Future<void> disposeBufferStream() async {
     _isPlaying = false;
-    _isPaused = false;  // Reset pause state
+    _isPaused = false; // Reset pause state
     _bufferMonitor?.cancel();
     _soundHandle = null;
     _volumeChunks.clear();
