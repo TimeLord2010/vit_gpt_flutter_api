@@ -18,7 +18,6 @@ dependencies:
   get_it: ^8.0.2
   just_audio: ^0.9.42
   logger: ^2.5.0
-  path_provider: ^2.1.5
   record: ^6.0.0
   shared_preferences: ^2.3.3
   vit_dart_extensions: ^4.0.0
