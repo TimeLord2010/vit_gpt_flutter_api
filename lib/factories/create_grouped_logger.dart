@@ -2,9 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:vit_gpt_flutter_api/features/usecases/get_error_message.dart';
 
-import '../features/usecases/setup_ui_stub.dart'
-    if (dart.library.io) '../features/usecases/setup_ui_io.dart';
-
 class GptFlutterLogGroup extends LogPrinter {
   final List<String> tags;
   final String separator;
@@ -52,7 +49,7 @@ class GptFlutterLogFilter extends LogFilter {
 List<LogOutput>? _outputsCache;
 
 Future<void> initializeLogOutputs() async {
-  _outputsCache ??= await getPlatformSpecificOutputs(tag: 'gptflutter');
+  _outputsCache ??= [ConsoleOutput()];
 }
 
 Logger createGptFlutterLogger(

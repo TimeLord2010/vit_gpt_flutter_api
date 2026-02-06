@@ -8,7 +8,6 @@ import 'package:vit_gpt_flutter_api/features/repositories/audio/players/vit_audi
 
 import '../repositories/audio/vit_audio_recorder.dart';
 import '../repositories/local_storage_repository.dart';
-import 'setup_ui_stub.dart' if (dart.library.io) 'setup_ui_io.dart';
 
 Future<void> setupUI({
   String? openAiKey,
@@ -17,7 +16,7 @@ Future<void> setupUI({
 
   await initializeLogOutputs();
 
-  List<LogOutput> outputs = await getPlatformSpecificOutputs(tag: 'gptdart');
+  List<LogOutput> outputs = [ConsoleOutput()];
 
   DynamicFactories.logger = (tag) {
     return Logger(
