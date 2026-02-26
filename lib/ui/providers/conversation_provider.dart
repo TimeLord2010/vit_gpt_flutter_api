@@ -396,13 +396,13 @@ class ConversationProvider with ChangeNotifier {
         onSpeechEnd: (speechEnd) {
           userSpeechEndTime = DateTime.now();
         },
-        onTranscriptionEnd: (transcriptionEnd, audioBytes) async {
+        onTranscriptionEnd: (transcriptionEnd) async {
           var msg = Message(
             id: transcriptionEnd.id,
             date: userSpeechEndTime ?? DateTime.now(),
             role: transcriptionEnd.role,
             text: transcriptionEnd.content,
-            audio: audioBytes,
+            audio: transcriptionEnd.audioBytes,
             itemId: transcriptionEnd.id,
             previousItemId: transcriptionEnd.previousItemId,
           );
@@ -422,7 +422,7 @@ class ConversationProvider with ChangeNotifier {
             await rep.createMessage(id, msg);
           }
         },
-        onResponse: (response, audioBytes) async {
+        onResponse: (response) async {
           var outputItem = response.output.firstWhereOrNull((x) {
             return x.role == Role.assistant;
           });
@@ -436,7 +436,7 @@ class ConversationProvider with ChangeNotifier {
           var msg = Message.assistant(
             message: text,
             usage: response.usage,
-            audio: audioBytes,
+            audio: response.audioBytes,
             itemId: outputItem?.id,
             previousItemId: response.previousItemId,
           );

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
@@ -28,28 +27,19 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   final Future<void> Function() onStart;
 
   /// Called when a transcription starts. Either from the user or the assistant.
-  final void Function(TranscriptionStart transcriptionStart)?
-      onTranscriptionStart;
+  final void Function(TranscriptionStart transcriptionStart)? onTranscriptionStart;
 
   final void Function(SpeechEnd speechEnd)? onSpeechEnd;
 
   /// Called when a transcription data is received.
   final void Function(TranscriptionItem transcriptionItem)? onTranscription;
 
-  final void Function(TranscriptionEnd transcriptionEnd, List<int>? audioBytes)?
-      onTranscriptionEnd;
+  final void Function(TranscriptionEnd transcriptionEnd)? onTranscriptionEnd;
 
-  final void Function(RealtimeResponse response, List<int>? audioBytes)?
-      onResponse;
+  final void Function(RealtimeResponse response)? onResponse;
 
   /// Called when any error happens. Useful to update the UI.
   final void Function(String errorMessage) onError;
-
-  final List<int> aiAudioBytesBeingRecorded = [];
-  final List<int> aiAudioBytesWaitingTranscription = [];
-
-  final List<int> userAudioBytesBeingRecorded = [];
-  final List<int> userAudioBytesWaitingTranscription = [];
 
   bool? isPressToTalkMode;
 
@@ -157,7 +147,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.open();
 
     rep.onResponse.listen((response) async {
-      onResponse?.call(response, aiAudioBytesWaitingTranscription);
+      onResponse?.call(response);
     });
 
     // Creating realtime audio player
@@ -191,10 +181,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     var onTranscriptionEnd = this.onTranscriptionEnd;
     if (onTranscriptionEnd != null) {
       rep.onTranscriptionEnd.listen((transcriptionEnd) {
-        onTranscriptionEnd(
-          transcriptionEnd,
-          userAudioBytesWaitingTranscription,
-        );
+        onTranscriptionEnd(transcriptionEnd);
       });
     }
 
@@ -232,20 +219,10 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
     rep.onSpeechEnd.listen((speechEnd) {
       if (speechEnd.done) {
         if (speechEnd.role == Role.user) {
-          userAudioBytesWaitingTranscription.clear();
-          userAudioBytesWaitingTranscription.addAll(
-            userAudioBytesBeingRecorded,
-          );
-          userAudioBytesBeingRecorded.clear();
-          debugPrint(
-            'AUDIO - onSpeechEnd ${userAudioBytesWaitingTranscription.length}',
-          );
+          debugPrint('AUDIO - onSpeechEnd (user)');
         } else {
           // AI speech has ended - signal no more audio data coming
           realtimePlayer?.completeStream();
-          aiAudioBytesWaitingTranscription.clear();
-          aiAudioBytesWaitingTranscription.addAll(aiAudioBytesBeingRecorded);
-          aiAudioBytesBeingRecorded.clear();
         }
       }
 
@@ -317,7 +294,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   /// Clears the buffered user audio without committing it.
   /// Used when press-to-talk duration is too short.
   void clearUserAudioBuffer() {
-    userAudioBytesBeingRecorded.clear();
+    // No-op: audio bytes are no longer tracked
   }
 
   @override
@@ -398,10 +375,6 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       realtimeModel?.sendUserAudio(bytes);
       var volume = getAudioIntensityFromPcm16(bytes);
       _audioVolumeStreamController.add(volume);
-
-      if (_oldStatus == ChatStatus.listeningToUser) {
-        userAudioBytesBeingRecorded.addAll(bytes);
-      }
     });
   }
 
@@ -428,12 +401,9 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   void _processAiBytes(data) {
     if (data is String) {
       realtimePlayer?.appendData(data);
-      Uint8List bytes = base64Decode(data);
-      aiAudioBytesBeingRecorded.addAll(bytes);
     } else {
       Uint8List bytes = data;
       realtimePlayer?.appendBytes(bytes);
-      aiAudioBytesBeingRecorded.addAll(bytes);
     }
   }
 }
