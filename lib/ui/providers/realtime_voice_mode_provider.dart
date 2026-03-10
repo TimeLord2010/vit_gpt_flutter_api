@@ -192,13 +192,6 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
         /// because its value will always be 0 🙄, so we have no option but to
         /// trust simply in the order we receive the data.
         _processAiBytes(speech.audioData);
-
-        // Only change status to speaking if AI hasn't already finished
-        // This prevents late-arriving events from changing status after player stopped
-        if (!_aiHasFinishedSpeaking) {
-          setStatus(ChatStatus.speaking);
-          muteMic();
-        }
       }
     });
 
@@ -207,6 +200,12 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
       if (role == Role.assistant) {
         _aiHasFinishedSpeaking = false;
         realtimePlayer?.resetBuffer();
+
+        // Mute mic immediately when AI speech starts, before any audio data arrives.
+        // This avoids a race condition where onSpeech fires before _aiHasFinishedSpeaking
+        // is set to false (observed on mobile with Soniox).
+        setStatus(ChatStatus.speaking);
+        muteMic();
 
         // If user had paused, new AI speech should unpause
         if (_isPaused) {
