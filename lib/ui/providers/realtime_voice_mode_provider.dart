@@ -132,7 +132,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
   }
 
   @override
-  Future<RealtimeModel> startVoiceMode({required String sonioxTemporaryKey, bool isPressToTalkMode = false}) async {
+  Future<RealtimeModel> startVoiceMode({bool isPressToTalkMode = false}) async {
     this.isPressToTalkMode = isPressToTalkMode;
     _logger.i('Starting voice mode');
 
@@ -142,7 +142,7 @@ class RealtimeVoiceModeProvider with VoiceModeContract {
 
     // Creating realtime model
     realtimeModel?.close();
-    var rep = createRealtimeRepository(sonioxTemporaryKey: sonioxTemporaryKey);
+    var rep = createRealtimeRepository();
     realtimeModel = rep;
     rep.open();
 

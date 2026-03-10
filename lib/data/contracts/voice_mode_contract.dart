@@ -25,7 +25,7 @@ mixin VoiceModeContract {
 
   Future<void> stopVoiceMode();
 
-  Future<RealtimeModel?> startVoiceMode({required String sonioxTemporaryKey, bool isPressToTalkMode = false});
+  Future<RealtimeModel?> startVoiceMode({bool isPressToTalkMode = false});
 
   /// Pauses both AI speech playback and microphone recording
   Future<void> pauseVoiceMode();
