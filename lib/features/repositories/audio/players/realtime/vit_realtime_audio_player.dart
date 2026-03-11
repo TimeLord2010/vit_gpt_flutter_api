@@ -87,8 +87,6 @@ class VitRealtimeAudioPlayer with RealtimeAudioPlayer {
   @override
   Future<void> appendBytes(Uint8List audioData) async {
     await _setupCompleter?.future;
-    var now = DateTime.now();
-    _logger.d('Received audio data on $now');
 
     // Calculate chunk duration (assuming 24kHz, mono, 16-bit)
     final sampleCount = audioData.length ~/ 2; // 16-bit = 2 bytes per sample
